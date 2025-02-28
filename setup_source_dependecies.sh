@@ -11,7 +11,8 @@ SRC_DIR=$WS_DIR/src
 
 # List of dependencies (repository URL + optional branch)
 DEPENDENCIES=(
-    "https://github.com/PRBonn/kiss-icp.git main"
+    "https://github.com/PRBonn/kiss-icp.git main",
+    "https://github.com/aimas-upb/antrobot_description.git master"
     # Add other dependencies here
 )
 
