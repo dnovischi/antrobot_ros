@@ -13,9 +13,11 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    hostname = platform.node()
-    match = re.search(r'-(antrobot\d+)', hostname)
-    namespace = match.group(1) if match else ''
+    # TODO: this requires tf automatic nameing to be developed
+    # hostname = platform.node()
+    # match = re.search(r'-(antrobot\d+)', hostname)
+    # namespace = match.group(1) if match else ''
+    namespace=''
     
     namespace_launch_arg = DeclareLaunchArgument('namespace', default_value=namespace, description='Namespace for the robot')
     rdrive_launch_arg = DeclareLaunchArgument('launch_rdrive', default_value='true', description='Launch rdrive')
