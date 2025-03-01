@@ -109,7 +109,7 @@ controller_server:
     # =====================
     use_sim_time: False  # Use simulation time if true
     controller_frequency: 10.0  # Controller frequency
-    min_x_velocity_threshold: 0.001  # Min x velocity threshold
+    min_x_velocity_threshold: 0.002  # Min x velocity threshold
     min_y_velocity_threshold: 0.5  # Min y velocity threshold
     min_theta_velocity_threshold: 0.001  # Min theta velocity threshold
     failure_tolerance: 0.3  # Failure tolerance
@@ -135,27 +135,27 @@ controller_server:
       debug_trajectory_details: True  # Debug trajectory details
       min_vel_x: 0.0  # Min x velocity
       min_vel_y: 0.0  # Min y velocity
-      max_vel_x: 0.22  # Max x velocity
+      max_vel_x: 0.2  # Max x velocity
       max_vel_y: 0.0  # Max y velocity
       max_vel_theta: 1.0  # Max theta velocity
       min_speed_xy: 0.0  # Min speed in xy
-      max_speed_xy: 0.22  # Max speed in xy
+      max_speed_xy: 0.2  # Max speed in xy
       min_speed_theta: 0.0  # Min theta speed
-      acc_lim_x: 2.5  # X acceleration limit
+      acc_lim_x: 2.0  # X acceleration limit
       acc_lim_y: 0.0  # Y acceleration limit
       acc_lim_theta: 3.2  # Theta acceleration limit
-      decel_lim_x: -2.5  # X deceleration limit
+      decel_lim_x: -2.0  # X deceleration limit
       decel_lim_y: 0.0  # Y deceleration limit
       decel_lim_theta: -3.2  # Theta deceleration limit
       vx_samples: 20  # X velocity samples
       vy_samples: 0  # Y velocity samples
       vtheta_samples: 40  # Theta velocity samples
       sim_time: 1.5  # Simulation time
-      linear_granularity: 0.05  # Linear granularity
-      angular_granularity: 0.025  # Angular granularity
+      linear_granularity: 0.04  # Linear granularity
+      angular_granularity: 0.02  # Angular granularity
       transform_tolerance: 0.2  # Transform tolerance
       xy_goal_tolerance: 0.05  # XY goal tolerance
-      trans_stopped_velocity: 0.25  # Translational stopped velocity
+      trans_stopped_velocity: 0.2  # Translational stopped velocity
       short_circuit_trajectory_evaluation: True  # Short circuit trajectory evaluation
       stateful: True  # Stateful
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]  # Critics
@@ -180,7 +180,7 @@ local_costmap:
       # =====================
       # Local Costmap Parameters
       # =====================
-      update_frequency: 5.0  # Update frequency
+      update_frequency: 4.0  # Update frequency
       publish_frequency: 2.0  # Publish frequency
       global_frame: odom  # Global frame ID
       robot_base_frame: base_link  # Robot base frame ID
@@ -188,8 +188,8 @@ local_costmap:
       rolling_window: true  # Enable rolling window
       width: 3  # Width of the costmap
       height: 3  # Height of the costmap
-      resolution: 0.05  # Resolution of the costmap
-      robot_radius: 0.1  # Robot radius
+      resolution: 0.025  # Resolution of the costmap
+      robot_radius: 0.25  # Robot radius
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"  # Inflation layer plugin
@@ -221,9 +221,9 @@ local_costmap:
           clearing: True  # Enable clearing
           marking: True  # Enable marking
           data_type: "LaserScan"  # Data type
-          raytrace_max_range: 3.0  # Raytrace max range
+          raytrace_max_range: 3.5  # Raytrace max range
           raytrace_min_range: 0.0  # Raytrace min range
-          obstacle_max_range: 2.5  # Obstacle max range
+          obstacle_max_range: 3.0  # Obstacle max range
           obstacle_min_range: 0.0  # Obstacle min range
       static_layer:
         map_subscribe_transient_local: True  # Enable transient local subscription
@@ -246,8 +246,8 @@ global_costmap:
       global_frame: map  # Global frame ID
       robot_base_frame: base_link  # Robot base frame ID
       use_sim_time: True  # Use simulation time if true
-      robot_radius: 0.1  # Robot radius
-      resolution: 0.05  # Resolution of the costmap
+      robot_radius: 0.25  # Robot radius
+      resolution: 0.025  # Resolution of the costmap
       track_unknown_space: true  # Track unknown space
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
       obstacle_layer:
@@ -260,9 +260,9 @@ global_costmap:
           clearing: True  # Enable clearing
           marking: True  # Enable marking
           data_type: "LaserScan"  # Data type
-          raytrace_max_range: 3.0  # Raytrace max range
+          raytrace_max_range: 3.5  # Raytrace max range
           raytrace_min_range: 0.0  # Raytrace min range
-          obstacle_max_range: 2.5  # Obstacle max range
+          obstacle_max_range: 3.0  # Obstacle max range
           obstacle_min_range: 0.0  # Obstacle min range
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"  # Voxel layer plugin
@@ -280,9 +280,9 @@ global_costmap:
           clearing: True  # Enable clearing
           marking: True  # Enable marking
           data_type: "LaserScan"  # Data type
-          raytrace_max_range: 3.0  # Raytrace max range
+          raytrace_max_range: 3.5  # Raytrace max range
           raytrace_min_range: 0.0  # Raytrace min range
-          obstacle_max_range: 2.5  # Obstacle max range
+          obstacle_max_range: 3.0  # Obstacle max range
           obstacle_min_range: 0.0  # Obstacle min range
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"  # Static layer plugin
