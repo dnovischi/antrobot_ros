@@ -35,7 +35,7 @@ def generate_launch_description():
    # Create the rdrive node
     rdrive_node = Node(
         package='antrobot_ros',
-        executable='rdrive_node.py',
+        executable='rdrive_node',
         namespace=LaunchConfiguration('namespace'),
         name='rdrive_node',
         parameters=[rdrive_parmas]
