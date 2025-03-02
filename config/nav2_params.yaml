@@ -135,16 +135,16 @@ controller_server:
       debug_trajectory_details: True  # Debug trajectory details
       min_vel_x: 0.0  # Min x velocity
       min_vel_y: 0.0  # Min y velocity
-      max_vel_x: 0.2  # Max x velocity
+      max_vel_x: 0.15  # Max x velocity
       max_vel_y: 0.0  # Max y velocity
       max_vel_theta: 1.0  # Max theta velocity
       min_speed_xy: 0.0  # Min speed in xy
-      max_speed_xy: 0.2  # Max speed in xy
+      max_speed_xy: 0.15  # Max speed in xy
       min_speed_theta: 0.0  # Min theta speed
-      acc_lim_x: 2.0  # X acceleration limit
+      acc_lim_x: 1.5  # X acceleration limit
       acc_lim_y: 0.0  # Y acceleration limit
       acc_lim_theta: 3.2  # Theta acceleration limit
-      decel_lim_x: -2.0  # X deceleration limit
+      decel_lim_x: -1.5  # X deceleration limit
       decel_lim_y: 0.0  # Y deceleration limit
       decel_lim_theta: -3.2  # Theta deceleration limit
       vx_samples: 20  # X velocity samples
