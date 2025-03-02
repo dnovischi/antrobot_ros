@@ -135,13 +135,13 @@ controller_server:
       debug_trajectory_details: True  # Debug trajectory details
       min_vel_x: 0.0  # Min x velocity
       min_vel_y: 0.0  # Min y velocity
-      max_vel_x: 0.15  # Max x velocity
+      max_vel_x: 0.2  # Max x velocity
       max_vel_y: 0.0  # Max y velocity
       max_vel_theta: 1.0  # Max theta velocity
       min_speed_xy: 0.0  # Min speed in xy
-      max_speed_xy: 0.15  # Max speed in xy
+      max_speed_xy: 0.2  # Max speed in xy
       min_speed_theta: 0.0  # Min theta speed
-      acc_lim_x: 1.0  # X acceleration limit
+      acc_lim_x: 2.0  # X acceleration limit
       acc_lim_y: 0.0  # Y acceleration limit
       acc_lim_theta: 3.2  # Theta acceleration limit
       decel_lim_x: -2.0  # X deceleration limit
@@ -150,12 +150,12 @@ controller_server:
       vx_samples: 20  # X velocity samples
       vy_samples: 0  # Y velocity samples
       vtheta_samples: 40  # Theta velocity samples
-      sim_time: 2.0  # Simulation time
+      sim_time: 1.5  # Simulation time
       linear_granularity: 0.04  # Linear granularity
       angular_granularity: 0.02  # Angular granularity
       transform_tolerance: 0.2  # Transform tolerance
       xy_goal_tolerance: 0.05  # XY goal tolerance
-      trans_stopped_velocity: 0.15  # Translational stopped velocity
+      trans_stopped_velocity: 0.2  # Translational stopped velocity
       short_circuit_trajectory_evaluation: True  # Short circuit trajectory evaluation
       stateful: True  # Stateful
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]  # Critics
@@ -189,7 +189,7 @@ local_costmap:
       width: 3  # Width of the costmap
       height: 3  # Height of the costmap
       resolution: 0.025  # Resolution of the costmap
-      robot_radius: 0.15  # Robot radius
+      robot_radius: 0.25  # Robot radius
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"  # Inflation layer plugin
@@ -246,7 +246,7 @@ global_costmap:
       global_frame: map  # Global frame ID
       robot_base_frame: base_link  # Robot base frame ID
       use_sim_time: True  # Use simulation time if true
-      robot_radius: 0.15  # Robot radius
+      robot_radius: 0.25  # Robot radius
       resolution: 0.025  # Resolution of the costmap
       track_unknown_space: true  # Track unknown space
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
