@@ -108,7 +108,7 @@ controller_server:
     # Controller Server Parameters
     # =====================
     use_sim_time: False  # Use simulation time if true
-    controller_frequency: 10.0  # Controller frequency
+    controller_frequency: 20.0  # Controller frequency
     min_x_velocity_threshold: 0.002  # Min x velocity threshold
     min_y_velocity_threshold: 0.5  # Min y velocity threshold
     min_theta_velocity_threshold: 0.001  # Min theta velocity threshold
@@ -135,21 +135,21 @@ controller_server:
       debug_trajectory_details: True  # Debug trajectory details
       min_vel_x: 0.0  # Min x velocity
       min_vel_y: 0.0  # Min y velocity
-      max_vel_x: 0.2  # Max x velocity
+      max_vel_x: 0.18  # Max x velocity
       max_vel_y: 0.0  # Max y velocity
       max_vel_theta: 1.0  # Max theta velocity
       min_speed_xy: 0.0  # Min speed in xy
-      max_speed_xy: 0.2  # Max speed in xy
+      max_speed_xy: 0.18  # Max speed in xy
       min_speed_theta: 0.0  # Min theta speed
-      acc_lim_x: 2.0  # X acceleration limit
+      acc_lim_x: 0.5  # X acceleration limit
       acc_lim_y: 0.0  # Y acceleration limit
       acc_lim_theta: 3.2  # Theta acceleration limit
-      decel_lim_x: -2.0  # X deceleration limit
+      decel_lim_x: -0.5  # X deceleration limit
       decel_lim_y: 0.0  # Y deceleration limit
       decel_lim_theta: -3.2  # Theta deceleration limit
-      vx_samples: 20  # X velocity samples
+      vx_samples: 40  # X velocity samples
       vy_samples: 0  # Y velocity samples
-      vtheta_samples: 40  # Theta velocity samples
+      vtheta_samples: 80  # Theta velocity samples
       sim_time: 1.5  # Simulation time
       linear_granularity: 0.04  # Linear granularity
       angular_granularity: 0.02  # Angular granularity
@@ -186,9 +186,9 @@ local_costmap:
       robot_base_frame: base_link  # Robot base frame ID
       use_sim_time: False  # Use simulation time if true
       rolling_window: true  # Enable rolling window
-      width: 3  # Width of the costmap
-      height: 3  # Height of the costmap
-      resolution: 0.025  # Resolution of the costmap
+      width: 2  # Width of the costmap
+      height: 2  # Height of the costmap
+      resolution: 0.01  # Resolution of the costmap
       robot_radius: 0.25  # Robot radius
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
       inflation_layer:
@@ -323,7 +323,7 @@ planner_server:
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"  # Grid-based planner plugin
       tolerance: 0.5  # Tolerance for the planner
-      use_astar: false  # Use A* algorithm
+      use_astar: true  # Use A* algorithm
       allow_unknown: true  # Allow unknown space
 
 planner_server_rclcpp_node:
