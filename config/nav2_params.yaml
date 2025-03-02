@@ -189,7 +189,7 @@ local_costmap:
       width: 3  # Width of the costmap
       height: 3  # Height of the costmap
       resolution: 0.025  # Resolution of the costmap
-      robot_radius: 0.25  # Robot radius
+      robot_radius: 0.15  # Robot radius
       plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"  # Inflation layer plugin
@@ -246,7 +246,7 @@ global_costmap:
       global_frame: map  # Global frame ID
       robot_base_frame: base_link  # Robot base frame ID
       use_sim_time: True  # Use simulation time if true
-      robot_radius: 0.25  # Robot radius
+      robot_radius: 0.15  # Robot radius
       resolution: 0.025  # Resolution of the costmap
       track_unknown_space: true  # Track unknown space
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]  # List of plugins
