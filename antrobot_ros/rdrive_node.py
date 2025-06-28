@@ -14,6 +14,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
 from builtin_interfaces.msg import Time
+from nav2_msgs.srv import SetInitialPose
 import math  # Replace tf_transformations with math
 
 
@@ -191,10 +192,50 @@ class RDriveNode(Node):
         if self.publish_tf:
             self.get_logger().info(f'RDrive TF: {self.odom_frame_id} -> {self.base_frame_id}')
 
+        # Create set pose service
+        self.set_pose_service = self.create_service(
+            SetInitialPose,
+            '~/set_pose',
+            self.set_pose_callback
+        )
+        
+        self.get_logger().info('RDrive set_pose service available at: ~/set_pose')
+
     def __cmd_vel_callback(self, msg: Twist) -> None:
         v = msg.linear.x
         omega = msg.angular.z
         self.drive.cmd_vel(v, omega)
+    
+    def set_pose_callback(self, request, response):
+        """Service callback to set the robot's pose."""
+        try:
+            # Extract pose from request
+            x = request.pose.pose.pose.position.x
+            y = request.pose.pose.pose.position.y
+            
+            # Convert quaternion to theta (yaw angle)
+            # For 2D navigation, we only care about rotation around Z axis
+            qz = request.pose.pose.pose.orientation.z
+            qw = request.pose.pose.pose.orientation.w
+            theta = 2.0 * math.atan2(qz, qw)
+            
+            # Set the pose in the drive system
+            if self.drive_state:
+                self.drive.set_pose(x=x, y=y, theta=theta)
+                
+                # Reset timestamp tracking to align with new pose
+                self.first_hardware_timestamp = None
+                self.last_hardware_timestamp = None
+                self.odometry_start_time = None
+                
+                self.get_logger().info(f'RDrive pose set to: x={x:.3f}, y={y:.3f}, theta={theta:.3f}')
+            else:
+                self.get_logger().error('Cannot set pose: RDrive not initialized')
+                
+        except Exception as e:
+            self.get_logger().error(f'Failed to set RDrive pose: {str(e)}')
+            
+        return response
     
     def publish_odometry(self):
         """Timer callback for odometry publishing."""
