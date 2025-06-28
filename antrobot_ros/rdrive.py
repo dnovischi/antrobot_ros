@@ -1,4 +1,3 @@
-
 # Copyright (C) 2021 Dan Novischi. All rights reserved.
 # This software may be modified and distributed under the terms of the
 # GNU Lesser General Public License v3 or any later version.
@@ -7,15 +6,18 @@ from smbus2 import SMBus
 import struct
 
 class RDrive:
+    __DCM_NO_LOAD_RPM = 8
     __ENC_CPR_REG = 13
     __DD_EN_DIS = 15
     __DD_WHEEL_SEPARATION = 16
     __DD_WHEEL_RADIUS = 17
     __DD_PID_GAINS = 20
     __DD_VEL_CMD = 21
+    __DD_ODOM = 22
+    __DD_POSE = 23
 
     def __init__(
-            self, pose=None, wheel_radius=0.03, wheel_separation=0.1345,
+            self, pose=None, wheel_radius=0.03, wheel_separation=0.219,
             encoder_resolution=2100, i2c_port=1, i2c_addr=0x70
     ):
         # Set 2D robot pose
@@ -103,3 +105,45 @@ class RDrive:
                 bus.write_i2c_block_data(self.i2c_addr, self.__ENC_CPR_REG, msg)
             except IOError:
                 print("set_pid_gains(): IOError in i2c write.")
+
+    def get_odom(self):
+        """Read odometry data from the drive.
+
+        Returns:
+            list: [timestamp (int, 8 bytes), x (float), y (float), theta (float), linear_velocity (float), angular_velocity (float)]
+                    or None if read fails.
+        """
+        with SMBus(self.i2c_port) as bus:
+            try:
+                data = bus.read_i2c_block_data(self.i2c_addr, self.__DD_ODOM, 28)
+                # First 8 bytes: int (timestamp, 8 bytes), next 20 bytes: 5 floats
+                timestamp = struct.unpack('<q', bytes(data[0:8]))[0]
+                floats = struct.unpack('<fffff', bytes(data[8:28]))
+                return [timestamp] + list(floats)
+            except IOError:
+                print("get_odom(): IOError in i2c read.")
+                return None
+
+    def set_pose(self, x, y, theta):
+        msg = [byte for data_item in [x, y, theta] for byte in struct.pack('<f', data_item)]
+        with SMBus(self.i2c_port) as bus:
+            try:
+                bus.write_i2c_block_data(self.i2c_addr, self.__DD_POSE, msg)
+            except IOError:
+                print("set_pose(): IOError in i2c write.")
+        self.pose = [x, y, theta]
+
+    def set_no_load_rpm(self, side, no_load_rpm):
+        """
+        Set the no-load RPM for a DC motor.
+
+        Args:
+            side (int): Motor side (e.g., 0 for left, 1 for right)
+            no_load_rpm (float): No-load RPM value to set
+        """
+        msg = [side] + [byte for byte in struct.pack('<f', no_load_rpm)]
+        with SMBus(self.i2c_port) as bus:
+            try:
+                bus.write_i2c_block_data(self.i2c_addr, self.__DCM_NO_LOAD_RPM, msg)
+            except IOError:
+                print("set_no_load_rpm(): IOError in i2c write.")
