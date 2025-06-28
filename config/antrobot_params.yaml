@@ -11,6 +11,15 @@
       wheel_separation: 0.219  # Distance between the wheels in meters
       encoder_cpr_left: 2940  # Encoder counts per revolution for the left motor
       encoder_cpr_right: 2940  # Encoder counts per revolution for the right motor
+      no_load_rpm_left: 75  # No-load RPM for the left motor
+      no_load_rpm_right: 75  # No-load RPM for the right motor
+      
+      # RDrive odometry configuration
+      odom_frequency: 50.0          # Wheel encoder odometry frequency (Hz)
+      odom_topic: 'wheel_odom'      # Topic for wheel encoder odometry
+      publish_tf: false             # Whether RDrive publishes TF transforms
+      odom_frame_id: 'odom'         # Parent frame for wheel odometry
+      base_frame_id: 'base_link'    # Child frame for wheel odometry
 
     # RPLidar is the lidar used for Antrobot, which currently integrates A1 and A2
     rplidar:
