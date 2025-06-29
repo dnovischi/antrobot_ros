@@ -32,8 +32,10 @@
 
     # The joint state estimator node is used to estimate the wheel joint states for the antrobot
     joint_state_estimator:
-      odom_topic: 'odom'  # Topic name for the odometry data to which the node subscribes
-      joint_states_topic: 'joint_states'  # Topic name for the joint states to which the node publishes 
+      odom: 'wheel_odom'  # Topic name for the odometry data to which the node subscribes (use 'wheel_odom' for RDrive, 'odom' for ICP)
+      joint_states_topic: 'joint_states'  # Topic name for the joint states to which the node publishes
+      use_icp_estimation: false  # Use ICP-based estimation (true) or Drive odometry (false, default)
+      wheel_velocity_correction_factor: 0.1  # Velocity correction factor for hybrid estimation
       wheel_radius: 0.03  # Radius of the wheels in meters # TODO: This should be done only once
       wheel_separation: 0.219  # Distance between the wheels in meters # TODO: This should be done only once
       publish_frequency: 20.0  # The maximum frequency at which the joint states will be published
