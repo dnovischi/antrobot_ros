@@ -199,7 +199,88 @@ class RDriveNode(Node):
     def __cmd_vel_callback(self, msg: Twist) -> None:
         v = msg.linear.x
         omega = msg.angular.z
-        self.drive.cmd_vel(v, omega)
+        
+        # Compute feasible command respecting robot constraints
+        v_feasible, omega_feasible = self._compute_feasible_command(v, omega)
+        
+        self.drive.cmd_vel(v_feasible, omega_feasible)
+    
+    def _compute_feasible_command(self, v, omega):
+        """
+        Compute feasible linear and angular velocities based on robot constraints.
+        
+        For infeasible commands:
+        - Scale command to fit within wheel velocity constraints while preserving signs
+        - Apply additional 1% reduction to the scaled result for safety margin
+        
+        Args:
+            v: Desired linear velocity (m/s)
+            omega: Desired angular velocity (rad/s)
+            
+        Returns:
+            tuple: (v_feasible, omega_feasible) in m/s and rad/s
+        """
+        # Calculate maximum wheel velocities from no-load RPM
+        # Convert RPM to rad/s: RPM * (2*pi/60)
+        max_wheel_vel_left = (self.no_load_rpm_left * 2.0 * math.pi / 60.0) * self.wheel_radius
+        max_wheel_vel_right = (self.no_load_rpm_right * 2.0 * math.pi / 60.0) * self.wheel_radius
+        
+        # Use the smaller of the two as the constraint (conservative approach)
+        max_wheel_vel = min(max_wheel_vel_left, max_wheel_vel_right)
+        
+        # Differential drive kinematics:
+        # v_left = v - (omega * wheel_separation / 2)
+        # v_right = v + (omega * wheel_separation / 2)
+        half_separation = self.wheel_separation / 2.0
+        
+        # Calculate required wheel velocities for the desired command
+        v_left_desired = v - omega * half_separation
+        v_right_desired = v + omega * half_separation
+        
+        # Check if the desired velocities are within constraints
+        max_desired_wheel_vel = max(abs(v_left_desired), abs(v_right_desired))
+        
+        if max_desired_wheel_vel <= max_wheel_vel:
+            # Command is feasible as-is
+            return v, omega
+        
+        # Command is not feasible, scale to fit constraints then reduce by 1%
+        # while preserving signs and maintaining turn radius
+        
+        if abs(omega) < 1e-6:  # Pure linear motion
+            # Scale linear velocity to maximum feasible while preserving sign
+            if v > 0:
+                v_scaled = max_wheel_vel
+            elif v < 0:
+                v_scaled = -max_wheel_vel
+            else:
+                v_scaled = 0.0
+            omega_scaled = 0.0
+        else:
+            # For turning motion, maintain the turn radius: R = v / omega
+            # Scale the command to fit within wheel velocity constraints
+            scale_factor = max_wheel_vel / max_desired_wheel_vel
+            
+            # Apply scaling factor (preserves signs automatically)
+            v_scaled = v * scale_factor
+            omega_scaled = omega * scale_factor
+        
+        # Apply 1% reduction to the scaled command while preserving signs
+        v_feasible = v_scaled * 0.99
+        omega_feasible = omega_scaled * 0.99
+        
+        self.get_logger().debug(f'Scaled then reduced: scale_factor={(max_wheel_vel / max_desired_wheel_vel):.3f}, final_reduction=1%')
+        
+        # Log processing if significant changes occurred
+        if abs(v - v_feasible) > 0.01 or abs(omega - omega_feasible) > 0.01:
+            total_reduction = v_feasible / v if abs(v) > 1e-6 else 1.0
+            self.get_logger().debug(f'Velocity constrained: ({v:.3f}, {omega:.3f}) -> '
+                                  f'({v_feasible:.3f}, {omega_feasible:.3f}) '
+                                  f'[total factor: {total_reduction:.3f}] '
+                                  f'[wheel_vels: L={v_left_desired:.3f}->{v_feasible - omega_feasible * half_separation:.3f}, '
+                                  f'R={v_right_desired:.3f}->{v_feasible + omega_feasible * half_separation:.3f}]')
+        
+        return v_feasible, omega_feasible
     
     def set_pose_callback(self, request, response):
         """Service callback to set the robot's pose."""
