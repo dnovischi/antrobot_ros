@@ -208,9 +208,15 @@ class JointStateEstimator(Node):
         return math.atan2(siny_cosp, cosy_cosp)
 
     def publish_joint_states(self, left_pos, right_pos, left_vel, right_vel):
+        # Add NaN validation before publishing
+        if (math.isnan(left_pos) or math.isnan(right_pos) or 
+            math.isnan(left_vel) or math.isnan(right_vel)):
+            self.get_logger().warn(f"NaN detected in joint states: pos=[{left_pos}, {right_pos}], vel=[{left_vel}, {right_vel}]")
+            return  # Don't publish invalid data
+        
         msg = JointState()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.name = ['wheel_left_joint', 'wheel_right_joint'] # TODO: provide through urdf
+        msg.name = ['wheel_left_joint', 'wheel_right_joint']
         msg.position = [left_pos, right_pos]
         msg.velocity = [left_vel, right_vel]
         msg.effort = []
