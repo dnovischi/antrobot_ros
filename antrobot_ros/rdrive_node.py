@@ -177,11 +177,6 @@ class RDriveNode(Node):
         # Set node internal rdrive state
         self.drive_state = False
         
-        # Relative timestamp tracking for odometry
-        self.first_hardware_timestamp = None
-        self.last_hardware_timestamp = None
-        self.odometry_start_time = None
-        
         # Instantiate RDrive
         self.drive = RDrive()
         
@@ -223,11 +218,6 @@ class RDriveNode(Node):
             if self.drive_state:
                 self.drive.set_pose(x=x, y=y, theta=theta)
                 
-                # Reset timestamp tracking to align with new pose
-                self.first_hardware_timestamp = None
-                self.last_hardware_timestamp = None
-                self.odometry_start_time = None
-                
                 self.get_logger().info(f'RDrive pose set to: x={x:.3f}, y={y:.3f}, theta={theta:.3f}')
             else:
                 self.get_logger().error('Cannot set pose: RDrive not initialized')
@@ -249,78 +239,13 @@ class RDriveNode(Node):
             return
             
         # Parse odometry data: [timestamp_counts, x, y, theta, linear_velocity, angular_velocity]
-        rdrive_timestamp_counts_raw, x, y, theta, linear_vel, angular_vel = odom_data
+        _, x, y, theta, linear_vel, angular_vel = odom_data
         
-        # Handle uint64_t timestamp from RDrive hardware
-        # Python may interpret large uint64_t values as negative signed integers
-        # Convert to proper unsigned 64-bit value
-        if rdrive_timestamp_counts_raw < 0:
-            # Convert negative signed interpretation to positive unsigned value
-            rdrive_timestamp_counts = rdrive_timestamp_counts_raw + (2**64)
-            self.get_logger().debug(f'Converted negative timestamp: {rdrive_timestamp_counts_raw} -> {rdrive_timestamp_counts}')
-        else:
-            rdrive_timestamp_counts = rdrive_timestamp_counts_raw
-        
-        # Convert RDrive timestamp counts to nanoseconds
-        rdrive_timestamp_ns = rdrive_timestamp_counts * 100_000
-        
-        # Initialize relative timestamp tracking on first reading
-        if self.first_hardware_timestamp is None:
-            self.first_hardware_timestamp = rdrive_timestamp_counts
-            self.odometry_start_time = self.get_clock().now()
-            self.last_hardware_timestamp = rdrive_timestamp_counts
-            self.get_logger().info(f'RDrive odometry timestamps initialized:')
-            self.get_logger().info(f'  Starting hardware timestamp: {rdrive_timestamp_counts} counts')
-            self.get_logger().info(f'  Starting ROS time: {self.odometry_start_time.nanoseconds / 1e9:.6f} seconds')
-        
-        # Calculate relative timestamp from first reading
-        if rdrive_timestamp_counts >= self.first_hardware_timestamp:
-            relative_timestamp_counts = rdrive_timestamp_counts - self.first_hardware_timestamp
-        else:
-            # Handle uint64_t wraparound (very unlikely but possible)
-            relative_timestamp_counts = (2**64 - self.first_hardware_timestamp) + rdrive_timestamp_counts
-        
-        # Convert relative counts to nanoseconds and add to start time
-        relative_timestamp_ns = relative_timestamp_counts * 100_000
-        odometry_timestamp_ns = self.odometry_start_time.nanoseconds + relative_timestamp_ns
-        
-        # Optional safety check for timestamp consistency
-        if self.last_hardware_timestamp is not None:
-            # Calculate time delta, handling uint64_t properly
-            if rdrive_timestamp_counts >= self.last_hardware_timestamp:
-                time_delta = rdrive_timestamp_counts - self.last_hardware_timestamp
-            else:
-                # Handle uint64_t wraparound (very unlikely but possible)
-                time_delta = (2**64 - self.last_hardware_timestamp) + rdrive_timestamp_counts
-            
-            # Log if time jumps are unexpectedly large (more than 1 second)
-            if time_delta > 10000:  # 10000 counts = 1 second
-                self.get_logger().debug(f'Large timestamp delta: {time_delta} counts ({time_delta * 0.0001:.3f}s)')
-                
-        self.last_hardware_timestamp = rdrive_timestamp_counts
-        
-        # Create ROS2 timestamp from calculated time
-        ros_timestamp = Time()
-        
-        # Ensure timestamp values are within valid ranges
-        total_seconds = odometry_timestamp_ns // 1_000_000_000
-        remaining_nanoseconds = odometry_timestamp_ns % 1_000_000_000
-        
-        # ROS2 Time.sec is a 32-bit signed integer, so clamp to valid range
-        if total_seconds > 2147483647:  # Max int32
-            self.get_logger().warn(f'Timestamp seconds too large: {total_seconds}, using current ROS time instead')
-            current_time = self.get_clock().now()
-            ros_timestamp = current_time.to_msg()
-        elif total_seconds < 0:
-            self.get_logger().warn(f'Timestamp seconds negative: {total_seconds}, using current ROS time instead')
-            current_time = self.get_clock().now()
-            ros_timestamp = current_time.to_msg()
-        else:
-            ros_timestamp.sec = int(total_seconds)
-            ros_timestamp.nanosec = int(remaining_nanoseconds)
-        
-        # Use calculated timestamp for odometry
-        self.odom_msg.header.stamp = ros_timestamp
+        # Use current ROS time for odometry timestamp
+        # Since RDrive computation is very fast (<1ms), this provides better
+        # synchronization with other ROS data and evo trajectory alignment
+        current_time = self.get_clock().now()
+        self.odom_msg.header.stamp = current_time.to_msg()
         
         # Set position
         self.odom_msg.pose.pose.position.x = x
@@ -346,13 +271,13 @@ class RDriveNode(Node):
         
         # Publish TF transform (only if enabled)
         if self.publish_tf and self.tf_broadcaster:
-            self.publish_tf_transform(ros_timestamp, x, y, theta)
+            self.publish_tf_transform(current_time.to_msg(), x, y, theta)
 
-    def publish_tf_transform(self, ros_timestamp, x, y, theta):
+    def publish_tf_transform(self, timestamp, x, y, theta):
         """Publish the transform from odom_frame_id to base_frame_id."""
         transform = TransformStamped()
         
-        transform.header.stamp = ros_timestamp
+        transform.header.stamp = timestamp
         transform.header.frame_id = self.odom_frame_id
         transform.child_frame_id = self.base_frame_id
         

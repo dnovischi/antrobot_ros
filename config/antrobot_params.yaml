@@ -15,7 +15,7 @@
       no_load_rpm_right: !!float 75.0  # No-load RPM for the right motor
       
       # RDrive odometry configuration
-      odom_frequency: 50.0          # Wheel encoder odometry frequency (Hz)
+      odom_frequency: 10.0          # Wheel encoder odometry frequency (Hz)
       odom_topic: 'wheel_odom'      # Topic for wheel encoder odometry
       publish_tf: false             # Whether RDrive publishes TF transforms
       odom_frame_id: 'odom'         # Parent frame for wheel odometry
