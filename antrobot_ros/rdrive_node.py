@@ -57,17 +57,17 @@ class RDriveNode(Node):
         # Odometry and TF parameters
         self.declare_parameter(
             'odom_frequency', 
-            50.0, 
+            20.0, 
             ParameterDescriptor(description='Odometry publishing frequency (Hz)')
         )
         self.declare_parameter(
             'odom_topic', 
-            'wheel_odom', 
+            'odom', 
             ParameterDescriptor(description='Topic name for wheel encoder odometry data')
         )
         self.declare_parameter(
             'publish_tf', 
-            False, 
+            True, 
             ParameterDescriptor(description='Whether to publish TF transforms for wheel odometry')
         )
         self.declare_parameter(
@@ -98,8 +98,8 @@ class RDriveNode(Node):
         
         # Validate odometry frequency
         if not (1.0 <= self.odom_frequency <= 100.0):
-            self.get_logger().warn(f'Odometry frequency {self.odom_frequency} out of range [1-100], setting to 50 Hz')
-            self.odom_frequency = 50.0
+            self.get_logger().warn(f'Odometry frequency {self.odom_frequency} out of range [1-100], setting to 20 Hz')
+            self.odom_frequency = 20.0
         
         # Define a QoS profile for command velocity
         cmd_vel_qos = QoSProfile(
@@ -186,6 +186,8 @@ class RDriveNode(Node):
         self.get_logger().info(f'RDrive publish TF: {self.publish_tf}')
         if self.publish_tf:
             self.get_logger().info(f'RDrive TF: {self.odom_frame_id} -> {self.base_frame_id}')
+        else:
+            self.get_logger().info('RDrive TF publishing disabled')
 
         # Create set pose service
         self.set_pose_service = self.create_service(
@@ -356,6 +358,10 @@ class RDriveNode(Node):
 
     def publish_tf_transform(self, timestamp, x, y, theta):
         """Publish the transform from odom_frame_id to base_frame_id."""
+        if not self.tf_broadcaster:
+            self.get_logger().warn('TF broadcaster not initialized but publish_tf_transform called')
+            return
+            
         transform = TransformStamped()
         
         transform.header.stamp = timestamp
@@ -372,7 +378,10 @@ class RDriveNode(Node):
         transform.transform.rotation.z = math.sin(theta / 2.0)
         transform.transform.rotation.w = math.cos(theta / 2.0)
         
-        self.tf_broadcaster.sendTransform(transform)
+        try:
+            self.tf_broadcaster.sendTransform(transform)
+        except Exception as e:
+            self.get_logger().error(f'Failed to publish TF transform: {str(e)}')
     
     def drive_init(self) -> None:
         self.get_logger().info("RDrive initializing...")

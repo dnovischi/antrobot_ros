@@ -1,0 +1,47 @@
+/**:
+  ros__parameters:
+    # Kinematic ICP - SLAM front-end that fuses wheel odometry with laser scan
+    # Replaces KISS-ICP with improved odometry using kinematic constraints
+    # Based on: https://github.com/PRBonn/kinematic-icp
+    kinematic_icp:
+      # === Launch Arguments (from common_args.launch.py) ===
+      lidar_topic: "scan"              # Topic for laser scan input
+      use_2d_lidar: true               # Use 2D lidar mode (true for RPLidar)
+      lidar_odometry_topic: "odom_lidar"  # Output odometry topic
+      lidar_odom_frame: "odom_lidar"      # Frame for lidar odometry
+      wheel_odom_frame: "odom" # Frame for wheel odometry
+      base_frame: "base_link"          # Robot base frame
+      publish_odom_tf: true            # Whether to publish TF transforms
+      invert_odom_tf: true            # Whether to invert TF transform
+      visualize: true                  # Enable visualization in RViz
+      
+      # === Online Node Parameters ===
+      tf_timeout: 0.2                  # TF lookup timeout (0.1 for sim, 0.0 for real)
+      use_sim_time: false              # Use simulation time
+      
+      # === Core Algorithm Parameters (from kinematic_icp_ros.yaml) ===
+      # Preprocessing
+      max_range: 100.0                 # Maximum range for lidar data
+      min_range: 0.0                   # Minimum range for lidar data
+      
+      # Mapping parameters
+      voxel_size: 1.0                  # Size of voxels for mapping
+      max_points_per_voxel: 20         # Maximum points per voxel
+      
+      # Correspondence threshold parameters
+      use_adaptive_threshold: true     # Use adaptive threshold
+      fixed_threshold: 1.0             # Fixed threshold (ignored if adaptive=true)
+      
+      # Registration Parameters
+      max_num_iterations: 10           # Maximum ICP iterations
+      convergence_criterion: 0.001     # Convergence threshold
+      max_num_threads: 1               # Number of threads
+      use_adaptive_odometry_regularization: true  # Adaptive odometry regularization
+      fixed_regularization: 0.0        # Fixed regularization (ignored if adaptive=true)
+      
+      # Motion Compensation
+      deskew: true                     # Motion compensation during scan
+      
+      # Covariance diagonal values
+      orientation_covariance: 0.1      # Orientation covariance
+      position_covariance: 0.1         # Position covariance
