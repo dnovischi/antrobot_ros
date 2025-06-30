@@ -15,7 +15,7 @@
       no_load_rpm_right: !!float 75.0  # No-load RPM for the right motor
       
       # RDrive odometry configuration
-      odom_frequency: 20.0 # Wheel encoder odometry frequency (Hz)
+      odom_frequency: 30.0 # Wheel encoder odometry frequency (Hz)
       odom_topic: 'odom_wheel' # Topic for wheel encoder odometry
       publish_tf: true # Whether RDrive publishes TF transforms
       invert_odom_tf: true # Whether to invert the odometry transform 
@@ -111,7 +111,7 @@
       visualize: false # Enable visualization in RViz
       
       # Online Node Parameters
-      tf_timeout: 0.1 # TF lookup timeout (0.1 for sim, 0.0 for real)
+      tf_timeout: 0.2 # TF lookup timeout (0.1 for sim, 0.0 for real)
       use_sim_time: false # Use simulation time
       
       # Preprocessing

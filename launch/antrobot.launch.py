@@ -24,12 +24,12 @@ def generate_launch_description():
     rplidar_launch_arg = DeclareLaunchArgument('launch_rplidar', default_value='true', description='Launch rplidar')
     joint_state_estimator_launch_arg = DeclareLaunchArgument('launch_joint_state_estimator', default_value='true', description='Launch joint_state_estimator')
     robot_state_launch_arg = DeclareLaunchArgument('launch_robot_state', default_value='true', description='Launch robot_state')
-    tf_static_link_launch_arg = DeclareLaunchArgument('launch_tf_static_link', default_value='true', description='Launch tf_static_link') # TODO: this is only used for debug, set accordingly
+    tf_static_link_launch_arg = DeclareLaunchArgument('launch_tf_static_link', default_value='false', description='Launch tf_static_link') # TODO: this is only used for debug, set accordingly
     laserscan_to_pointcloud_launch_arg = DeclareLaunchArgument('launch_laserscan_to_pointcloud', default_value='false', description='Launch laserscan_to_pointcloud')
     kiss_icp_launch_arg = DeclareLaunchArgument('launch_kiss_icp', default_value='false', description='Launch kiss_icp')
     kinematic_icp_launch_arg = DeclareLaunchArgument('launch_kinematic_icp', default_value='true', description='Launch kinematic_icp')
-    cartographer_launch_arg = DeclareLaunchArgument('launch_cartographer', default_value='false', description='Launch cartographer')
-    nav2_launch_arg = DeclareLaunchArgument('launch_nav2', default_value='false', description='Launch nav2')
+    cartographer_launch_arg = DeclareLaunchArgument('launch_cartographer', default_value='true', description='Launch cartographer')
+    nav2_launch_arg = DeclareLaunchArgument('launch_nav2', default_value='true', description='Launch nav2')
     
     rdrive_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
