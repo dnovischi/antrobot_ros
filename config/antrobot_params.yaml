@@ -15,11 +15,12 @@
       no_load_rpm_right: !!float 75.0  # No-load RPM for the right motor
       
       # RDrive odometry configuration
-      odom_frequency: 20.0          # Wheel encoder odometry frequency (Hz)
-      odom_topic: 'odom'      # Topic for wheel encoder odometry
-      publish_tf: true             # Whether RDrive publishes TF transforms
-      odom_frame_id: 'odom'   # Parent frame for wheel odometry
-      base_frame_id: 'base_link'    # Child frame for wheel odometry
+      odom_frequency: 20.0 # Wheel encoder odometry frequency (Hz)
+      odom_topic: 'odom_wheel' # Topic for wheel encoder odometry
+      publish_tf: true # Whether RDrive publishes TF transforms
+      invert_odom_tf: true # Whether to invert the odometry transform 
+      odom_frame_id: 'odom_wheel' # Frame ID for the odometry data
+      base_frame_id: 'base_link' # Frame ID for the base link
 
     # RPLidar is the lidar used for Antrobot, which currently integrates A1 and A2
     rplidar:
@@ -32,7 +33,7 @@
 
     # The joint state estimator node is used to estimate the wheel joint states for the antrobot
     joint_state_estimator:
-      odom: 'odom'  # Topic name for the odometry data to which the node subscribes (use 'wheel_odom' for RDrive, 'odom' for ICP)
+      odom: 'odom_wheel'  # Topic name for the odometry data to which the node subscribes (use 'wheel_odom' for RDrive, 'odom' for ICP)
       joint_states_topic: 'joint_states'  # Topic name for the joint states to which the node publishes
       use_icp_estimation: false  # Use ICP-based estimation (true) or Drive odometry (false, default)
       wheel_velocity_correction_factor: 0.1  # Velocity correction factor for hybrid estimation
@@ -76,7 +77,7 @@
     kiss_icp:
       odom_topic: 'odom'  # Topic name for the odometry data
       base_frame: 'base_link'  # Base frame for the ICP algorithm
-      lidar_odom_frame: "odom"  # Frame ID for the lidar odometry # TODO: This should be set to the lidar actual link
+      lidar_odom_frame: "odom"  # Frame ID for the lidar odometry 
       publish_odom_tf: true  # Whether to publish the odometry transform
       invert_odom_tf: false  # Whether to invert the odometry transform
       max_range: 3.5  # Maximum range for the lidar data in meters 
@@ -99,45 +100,45 @@
     # Paper: https://arxiv.org/pdf/2410.10277 - 2025
     kinematic_icp:
       # Launch Arguments
-      lidar_topic: "scan"              # Topic for laser scan input
-      use_2d_lidar: true               # Use 2D lidar mode (true for RPLidar)
-      lidar_odometry_topic: "odom_lidar"  # Output odometry topic
-      lidar_odom_frame: "base_link"      # Frame for lidar odometry
-      wheel_odom_frame: "odom"         # Frame for wheel odometry
-      base_frame: "base_link"          # Robot base frame
-      publish_odom_tf: true            # Whether to publish TF transforms
-      invert_odom_tf: true             # Whether to invert TF transform
-      visualize: true                  # Enable visualization in RViz
+      lidar_topic: "scan" # Topic for laser scan input
+      use_2d_lidar: true # Use 2D lidar mode (true for RPLidar)
+      lidar_odometry_topic: "odom" # Output odometry topic
+      lidar_odom_frame: "odom" # Frame for lidar odometry
+      wheel_odom_frame: "odom_wheel" # Frame for wheel odometry (from RDrive)
+      base_frame: "base_link" # Robot base frame
+      publish_odom_tf: true # Whether to publish TF transforms
+      invert_odom_tf: false # Whether to invert TF transform
+      visualize: false # Enable visualization in RViz
       
       # Online Node Parameters
-      tf_timeout: 0.1                 # TF lookup timeout (0.1 for sim, 0.0 for real)
-      use_sim_time: false              # Use simulation time
+      tf_timeout: 0.1 # TF lookup timeout (0.1 for sim, 0.0 for real)
+      use_sim_time: false # Use simulation time
       
       # Preprocessing
-      max_range: 3.5                   # Maximum range for lidar data
-      min_range: 0.2                   # Minimum range for lidar data
+      max_range: 3.5 # Maximum range for lidar data
+      min_range: 0.2 # Minimum range for lidar data
       
       # Mapping parameters
-      voxel_size: 0.1                  # Size of voxels for mapping
-      max_points_per_voxel: 20         # Maximum points per voxel
+      voxel_size: 0.1 # Size of voxels for mapping
+      max_points_per_voxel: 20 # Maximum points per voxel
       
       # Correspondence threshold parameters
-      use_adaptive_threshold: true     # Use adaptive threshold
-      fixed_threshold: 1.0             # Fixed threshold (ignored if adaptive=true)
+      use_adaptive_threshold: true # Use adaptive threshold
+      fixed_threshold: 1.0  # Fixed threshold (ignored if adaptive=true)
       
       # Registration Parameters
-      max_num_iterations: 10           # Maximum ICP iterations
-      convergence_criterion: 0.001     # Convergence threshold
-      max_num_threads: 1               # Number of threads
-      use_adaptive_odometry_regularization: true  # Adaptive odometry regularization
-      fixed_regularization: 0.0        # Fixed regularization (ignored if adaptive=true)
+      max_num_iterations: 10 # Maximum ICP iterations
+      convergence_criterion: 0.001 # Convergence threshold
+      max_num_threads: 1 # Number of threads
+      use_adaptive_odometry_regularization: true # Adaptive odometry regularization
+      fixed_regularization: 0.0 # Fixed regularization (ignored if adaptive=true)
       
       # Motion Compensation
-      deskew: true                     # Motion compensation during scan
+      deskew: true # Motion compensation during scan
       
       # Covariance diagonal values
-      orientation_covariance: 0.1      # Orientation covariance
-      position_covariance: 0.1         # Position covariance
+      orientation_covariance: 0.1 # Orientation covariance
+      position_covariance: 0.1 # Position covariance
 
     # Cartographer is another SLAM algorithm used for mapping and localization 
     # (https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/45466.pdf)

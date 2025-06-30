@@ -20,7 +20,7 @@ def generate_launch_description():
     config_file_path = os.path.join(
         get_package_share_directory('antrobot_ros'),
         'config',
-        'kinematic_icp_params.yaml'
+        'antrobot_params.yaml'
     )
 
     kinematic_icp_params = load_node_params(config_file_path, 'kinematic_icp')

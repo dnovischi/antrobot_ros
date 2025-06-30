@@ -7,13 +7,13 @@
       # Launch Arguments
       lidar_topic: "scan"              # Topic for laser scan input
       use_2d_lidar: true               # Use 2D lidar mode (true for RPLidar)
-      lidar_odometry_topic: "odom_lidar"  # Output odometry topic
-      lidar_odom_frame: "base_link"      # Frame for lidar odometry
-      wheel_odom_frame: "odom"         # Frame for wheel odometry
+      lidar_odometry_topic: "odom"     # Output odometry topic (fused lidar+wheel)
+      lidar_odom_frame: "odom"         # Frame for fused odometry output
+      wheel_odom_frame: "odom_wheel"   # Frame for wheel odometry input (from RDrive)
       base_frame: "base_link"          # Robot base frame
       publish_odom_tf: true            # Whether to publish TF transforms
-      invert_odom_tf: true             # Whether to invert TF transform
-      visualize: true                  # Enable visualization in RViz
+      invert_odom_tf: false            # Whether to invert TF transform
+      visualize: false                 # Enable visualization in RViz
       
       # Online Node Parameters
       tf_timeout: 0.1                 # TF lookup timeout (0.1 for sim, 0.0 for real)
