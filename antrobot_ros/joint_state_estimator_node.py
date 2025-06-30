@@ -103,19 +103,34 @@ class JointStateEstimator(Node):
 
     def rdrive_estimation(self, msg):
         """Estimate joint states using hybrid approach: pose-based positions with velocity corrections"""
-        # Get velocities directly from RDrive odometry twist (for immediate use and corrections)
+        # Get velocities directly from RDrive odometry twist
         v = msg.twist.twist.linear.x
         omega = msg.twist.twist.angular.z
         
-        # Convert to wheel velocities using differential drive kinematics
+        # Validate input values
+        if math.isnan(v) or math.isnan(omega):
+            self.get_logger().warn(f"NaN in input twist: v={v}, omega={omega}")
+            return
+        
+        # Safety check for wheel_radius
+        if abs(self.wheel_radius) < 1e-6:
+            self.get_logger().error("Invalid wheel_radius")
+            return
+        
+        # Convert to wheel velocities
         self.left_wheel_vel = (v - omega * self.wheel_separation / 2.0) / self.wheel_radius
         self.right_wheel_vel = (v + omega * self.wheel_separation / 2.0) / self.wheel_radius
         
-        # Get pose and timestamp from odometry message
+        # Get pose and timestamp
         x = msg.pose.pose.position.x
         y = msg.pose.pose.position.y
         theta = self.yaw_from_quaternion(msg.pose.pose.orientation)
         current_time = rclpy.time.Time.from_msg(msg.header.stamp)
+        
+        # Validate pose values
+        if math.isnan(x) or math.isnan(y) or math.isnan(theta):
+            self.get_logger().warn(f"NaN in pose: x={x}, y={y}, theta={theta}")
+            return
         
         # Initialize on first call
         if self.last_time_rdrive is None:
@@ -125,44 +140,65 @@ class JointStateEstimator(Node):
             self.last_theta = theta
             return
         
-        # Calculate time difference and pose changes
+        # Calculate time difference
         dt = (current_time - self.last_time_rdrive).nanoseconds / 1e9
         
-        if dt > 0:
-            # Method 1: Calculate wheel positions from pose changes (primary method)
+        if dt > 0 and dt < 1.0:  # Add upper bound check
+            # Calculate pose changes
             dx = x - self.last_x
             dy = y - self.last_y
             dtheta = theta - self.last_theta
             
             # Handle angle wraparound
             dtheta = math.atan2(math.sin(dtheta), math.cos(dtheta))
-            # Distance traveled by robot center
+            
+            # Distance traveled
             distance_increment = math.sqrt(dx**2 + dy**2)
             
-            # Determine direction of travel (forward/backward) using velocity
-            if v < 0:  # Moving backward
+            # Validate distance calculation
+            if math.isnan(distance_increment):
+                self.get_logger().warn(f"NaN distance: dx={dx}, dy={dy}")
+                return
+            
+            # Determine direction
+            if v < 0:
                 distance_increment = -distance_increment
             
-            # Calculate wheel position increments from pose changes
+            # Calculate wheel increments
             left_pos_increment = distance_increment - (dtheta * self.wheel_separation / 2.0)
             right_pos_increment = distance_increment + (dtheta * self.wheel_separation / 2.0)
             
-            # Calculate expected increments from velocities (for correction)
+            # Validate increments
+            if math.isnan(left_pos_increment) or math.isnan(right_pos_increment):
+                self.get_logger().warn(f"NaN increments: left={left_pos_increment}, right={right_pos_increment}, dtheta={dtheta}")
+                return
+            
+            # Calculate velocity-based increments
             left_vel_increment = self.left_wheel_vel * dt * self.wheel_radius
             right_vel_increment = self.right_wheel_vel * dt * self.wheel_radius
             
-            # Hybrid approach: Use pose-based as primary, velocity-based for correction
-            # Apply a small correction factor from velocity estimates
+            # Hybrid correction
             corrected_left_increment = (left_pos_increment * (1 - self.velocity_correction_factor) + 
                                       left_vel_increment * self.velocity_correction_factor)
             corrected_right_increment = (right_pos_increment * (1 - self.velocity_correction_factor) + 
                                        right_vel_increment * self.velocity_correction_factor)
             
-            # Update wheel positions with corrected increments
+            # Final validation before updating positions
+            if math.isnan(corrected_left_increment) or math.isnan(corrected_right_increment):
+                self.get_logger().warn(f"NaN corrected increments: left={corrected_left_increment}, right={corrected_right_increment}")
+                return
+            
+            # Update wheel positions
             self.left_wheel_pos += corrected_left_increment / self.wheel_radius
             self.right_wheel_pos += corrected_right_increment / self.wheel_radius
-        
-        # Update last pose and time
+            
+            # Final check after update
+            if math.isnan(self.left_wheel_pos) or math.isnan(self.right_wheel_pos):
+                self.get_logger().error(f"Positions became NaN after update! Resetting to 0.0")
+                self.left_wheel_pos = 0.0
+                self.right_wheel_pos = 0.0
+    
+        # Update last values
         self.last_x = x
         self.last_y = y
         self.last_theta = theta

@@ -57,19 +57,26 @@ class RDriveNode(Node):
         # Odometry and TF parameters
         self.declare_parameter(
             'odom_frequency', 
-            50.0, 
+            20.0, 
             ParameterDescriptor(description='Odometry publishing frequency (Hz)')
         )
         self.declare_parameter(
             'odom_topic', 
-            'wheel_odom', 
+            'odom', 
             ParameterDescriptor(description='Topic name for wheel encoder odometry data')
         )
         self.declare_parameter(
             'publish_tf', 
-            False, 
+            True,
             ParameterDescriptor(description='Whether to publish TF transforms for wheel odometry')
         )
+        
+        self.declare_parameter(
+            'invert_odom_tf', 
+            False,
+            ParameterDescriptor(description='Whether to invert TF transform (base_frame -> odom_frame)')
+        )
+        
         self.declare_parameter(
             'odom_frame_id', 
             'odom', 
@@ -93,13 +100,14 @@ class RDriveNode(Node):
         self.odom_frequency = self.get_parameter('odom_frequency').value
         self.odom_topic = self.get_parameter('odom_topic').value
         self.publish_tf = self.get_parameter('publish_tf').value
+        self.invert_odom_tf = self.get_parameter('invert_odom_tf').value
         self.odom_frame_id = self.get_parameter('odom_frame_id').value
         self.base_frame_id = self.get_parameter('base_frame_id').value
         
         # Validate odometry frequency
         if not (1.0 <= self.odom_frequency <= 100.0):
-            self.get_logger().warn(f'Odometry frequency {self.odom_frequency} out of range [1-100], setting to 50 Hz')
-            self.odom_frequency = 50.0
+            self.get_logger().warn(f'Odometry frequency {self.odom_frequency} out of range [1-100], setting to 20 Hz')
+            self.odom_frequency = 20.0
         
         # Define a QoS profile for command velocity
         cmd_vel_qos = QoSProfile(
@@ -184,8 +192,14 @@ class RDriveNode(Node):
         self.get_logger().info(f'RDrive odometry topic: {self.odom_topic}')
         self.get_logger().info(f'RDrive odometry frequency: {self.odom_frequency} Hz')
         self.get_logger().info(f'RDrive publish TF: {self.publish_tf}')
+        self.get_logger().info(f'RDrive invert TF: {self.invert_odom_tf}')
         if self.publish_tf:
-            self.get_logger().info(f'RDrive TF: {self.odom_frame_id} -> {self.base_frame_id}')
+            if self.invert_odom_tf:
+                self.get_logger().info(f'RDrive TF (inverted): {self.base_frame_id} -> {self.odom_frame_id}')
+            else:
+                self.get_logger().info(f'RDrive TF (normal): {self.odom_frame_id} -> {self.base_frame_id}')
+        else:
+            self.get_logger().info('RDrive TF publishing disabled')
 
         # Create set pose service
         self.set_pose_service = self.create_service(
@@ -355,24 +369,61 @@ class RDriveNode(Node):
             self.publish_tf_transform(current_time.to_msg(), x, y, theta)
 
     def publish_tf_transform(self, timestamp, x, y, theta):
-        """Publish the transform from odom_frame_id to base_frame_id."""
+        if not self.tf_broadcaster:
+            self.get_logger().warn('TF broadcaster not initialized but publish_tf_transform called')
+            return
+            
         transform = TransformStamped()
-        
         transform.header.stamp = timestamp
-        transform.header.frame_id = self.odom_frame_id
-        transform.child_frame_id = self.base_frame_id
         
-        transform.transform.translation.x = x
-        transform.transform.translation.y = y
-        transform.transform.translation.z = 0.0
+        if self.invert_odom_tf:
+            # When inverted: base_link → odom_frame (odom_frame is child of base_link)
+            # This means we need to compute the inverse transform
+            transform.header.frame_id = self.base_frame_id
+            transform.child_frame_id = self.odom_frame_id
+            
+            # For the inverse transform, we need to:
+            # 1. Rotate the translation by -theta, then negate
+            # 2. Negate the rotation
+            cos_theta = math.cos(-theta)
+            sin_theta = math.sin(-theta)
+            
+            # Rotate translation by -theta and negate
+            inv_x = -(x * cos_theta - y * sin_theta)
+            inv_y = -(x * sin_theta + y * cos_theta)
+            
+            transform.transform.translation.x = inv_x
+            transform.transform.translation.y = inv_y
+            transform.transform.translation.z = 0.0
+            
+            # Negate the rotation
+            inv_theta = -theta
+            transform.transform.rotation.x = 0.0
+            transform.transform.rotation.y = 0.0
+            transform.transform.rotation.z = math.sin(inv_theta / 2.0)
+            transform.transform.rotation.w = math.cos(inv_theta / 2.0)
+            
+            self.get_logger().debug(f'Publishing inverted TF: {self.base_frame_id} → {self.odom_frame_id}, '
+                                  f'pos=({inv_x:.3f}, {inv_y:.3f}), theta={inv_theta:.3f}')
+        else:
+            # Normal transform: odom_frame → base_link (base_link is child of odom_frame)
+            transform.header.frame_id = self.odom_frame_id
+            transform.child_frame_id = self.base_frame_id
+            transform.transform.translation.x = x
+            transform.transform.translation.y = y
+            transform.transform.translation.z = 0.0
+            transform.transform.rotation.x = 0.0
+            transform.transform.rotation.y = 0.0
+            transform.transform.rotation.z = math.sin(theta / 2.0)
+            transform.transform.rotation.w = math.cos(theta / 2.0)
+            
+            self.get_logger().debug(f'Publishing normal TF: {self.odom_frame_id} → {self.base_frame_id}, '
+                                  f'pos=({x:.3f}, {y:.3f}), theta={theta:.3f}')
         
-        # Convert theta to quaternion using math (for 2D rotation)
-        transform.transform.rotation.x = 0.0
-        transform.transform.rotation.y = 0.0
-        transform.transform.rotation.z = math.sin(theta / 2.0)
-        transform.transform.rotation.w = math.cos(theta / 2.0)
-        
-        self.tf_broadcaster.sendTransform(transform)
+        try:
+            self.tf_broadcaster.sendTransform(transform)
+        except Exception as e:
+            self.get_logger().error(f'Failed to publish TF transform: {str(e)}')
     
     def drive_init(self) -> None:
         self.get_logger().info("RDrive initializing...")

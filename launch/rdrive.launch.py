@@ -37,7 +37,8 @@ def generate_launch_description():
         'odom_topic': launch_params['odom_topic'],
         'publish_tf': bool(launch_params['publish_tf']),
         'odom_frame_id': launch_params['odom_frame_id'],
-        'base_frame_id': launch_params['base_frame_id']
+        'base_frame_id': launch_params['base_frame_id'],
+        'invert_odom_tf': bool(launch_params['invert_odom_tf'])
     }
     
     # Create the rdrive node

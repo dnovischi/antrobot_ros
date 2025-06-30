@@ -25,14 +25,12 @@ def generate_launch_description():
     joint_state_estimator_launch_arg = DeclareLaunchArgument('launch_joint_state_estimator', default_value='true', description='Launch joint_state_estimator')
     robot_state_launch_arg = DeclareLaunchArgument('launch_robot_state', default_value='true', description='Launch robot_state')
     tf_static_link_launch_arg = DeclareLaunchArgument('launch_tf_static_link', default_value='false', description='Launch tf_static_link') # TODO: this is only used for debug, set accordingly
-    laserscan_to_pointcloud_launch_arg = DeclareLaunchArgument('launch_laserscan_to_pointcloud', default_value='true', description='Launch laserscan_to_pointcloud')
-    kiss_icp_launch_arg = DeclareLaunchArgument('launch_kiss_icp', default_value='true', description='Launch kiss_icp')
+    laserscan_to_pointcloud_launch_arg = DeclareLaunchArgument('launch_laserscan_to_pointcloud', default_value='false', description='Launch laserscan_to_pointcloud')
+    kiss_icp_launch_arg = DeclareLaunchArgument('launch_kiss_icp', default_value='false', description='Launch kiss_icp')
+    kinematic_icp_launch_arg = DeclareLaunchArgument('launch_kinematic_icp', default_value='true', description='Launch kinematic_icp')
     cartographer_launch_arg = DeclareLaunchArgument('launch_cartographer', default_value='true', description='Launch cartographer')
     nav2_launch_arg = DeclareLaunchArgument('launch_nav2', default_value='true', description='Launch nav2')
     
-    
-
-    # Include launch files conditionally
     rdrive_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'rdrive.launch.py')
@@ -89,6 +87,14 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_kiss_icp')),
         launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
     )
+
+    kinematic_icp_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'kinematic_icp.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_kinematic_icp')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
     
     cartographer_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -114,6 +120,7 @@ def generate_launch_description():
         tf_static_link_launch_arg,
         laserscan_to_pointcloud_launch_arg,
         kiss_icp_launch_arg,
+        kinematic_icp_launch_arg, 
         cartographer_launch_arg,
         joint_state_estimator_launch_arg,
         robot_state_launch_arg,
@@ -123,6 +130,7 @@ def generate_launch_description():
         tf_static_link_launch,
         laserscan_to_pointcloud_launch,
         kiss_icp_launch,
+        kinematic_icp_launch, 
         cartographer_launch,
         joint_state_estimator_launch,
         robot_state_launch,
