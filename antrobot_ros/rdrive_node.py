@@ -160,6 +160,15 @@ class RDriveNode(Node):
         self.odom_msg.header.frame_id = self.odom_frame_id
         self.odom_msg.child_frame_id = self.base_frame_id
         
+        # Add previous valid odometry data storage
+        self.prev_valid_odom = {
+            'x': 0.0,
+            'y': 0.0, 
+            'theta': 0.0,
+            'linear_vel': 0.0,
+            'angular_vel': 0.0
+        }
+        
         # Set covariance matrices (tune these values based on your robot's accuracy)
         pose_covariance = [
             0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -335,6 +344,28 @@ class RDriveNode(Node):
             
         # Parse odometry data: [timestamp_counts, x, y, theta, linear_velocity, angular_velocity]
         _, x, y, theta, linear_vel, angular_vel = odom_data
+        
+        # Check for NaN values and use previous valid data if found
+        if (math.isnan(x) or math.isnan(y) or math.isnan(theta) or 
+            math.isnan(linear_vel) or math.isnan(angular_vel)):
+            
+            self.get_logger().warn(f'NaN detected in odometry data: x={x}, y={y}, theta={theta}, '
+                                 f'linear_vel={linear_vel}, angular_vel={angular_vel}. '
+                                 f'Using previous valid values.')
+            
+            # Use previous valid values
+            x = self.prev_valid_odom['x']
+            y = self.prev_valid_odom['y']
+            theta = self.prev_valid_odom['theta']
+            linear_vel = self.prev_valid_odom['linear_vel']
+            angular_vel = self.prev_valid_odom['angular_vel']
+        else:
+            # Update previous valid values with current valid data
+            self.prev_valid_odom['x'] = x
+            self.prev_valid_odom['y'] = y
+            self.prev_valid_odom['theta'] = theta
+            self.prev_valid_odom['linear_vel'] = linear_vel
+            self.prev_valid_odom['angular_vel'] = angular_vel
         
         # Use current ROS time for odometry timestamp
         # Since RDrive computation is very fast (<1ms), this provides better
