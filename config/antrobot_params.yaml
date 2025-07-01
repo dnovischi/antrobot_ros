@@ -129,7 +129,7 @@
       # Registration Parameters
       max_num_iterations: 10 # Maximum ICP iterations
       convergence_criterion: 0.001 # Convergence threshold
-      max_num_threads: 2 # Number of threads
+      max_num_threads: 4 # Number of threads
       use_adaptive_odometry_regularization: true # Adaptive odometry regularization
       fixed_regularization: 0.0 # Fixed regularization (ignored if adaptive=true)
       
