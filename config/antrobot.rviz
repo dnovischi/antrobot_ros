@@ -11,6 +11,7 @@ Panels:
         - /TF1
         - /TF1/Tree1
         - /LidarCloud1/Topic1
+        - /Odometry1
         - /LocalCostMap1
         - /GlobalCostMap1
       Splitter Ratio: 0.5944055914878845
@@ -32,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: LidarCloud
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -162,7 +163,7 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Angle Tolerance: 0.10000000149011612
+    - Angle Tolerance: 0
       Class: rviz_default_plugins/Odometry
       Covariance:
         Orientation:
@@ -182,7 +183,7 @@ Visualization Manager:
       Enabled: true
       Keep: 1
       Name: Odometry
-      Position Tolerance: 0.10000000149011612
+      Position Tolerance: 0
       Shape:
         Alpha: 1
         Axes Length: 0.30000001192092896
@@ -310,25 +311,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 15.454596519470215
+      Distance: 21.28962516784668
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.5515977740287781
-        Y: 0.33855584263801575
-        Z: -1.304834246635437
+        X: -7.719856262207031
+        Y: -7.325079441070557
+        Z: -0.7717183232307434
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4797964096069336
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.1176156997680664
+      Yaw: 3.0976157188415527
     Saved: ~
 Window Geometry:
   Displays:
