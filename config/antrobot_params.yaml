@@ -11,11 +11,11 @@
       wheel_separation: 0.219  # Distance between the wheels in meters
       encoder_cpr_left: 2940  # Encoder counts per revolution for the left motor
       encoder_cpr_right: 2940  # Encoder counts per revolution for the right motor
-      no_load_rpm_left: !!float 75.0  # No-load RPM for the left motor
-      no_load_rpm_right: !!float 75.0  # No-load RPM for the right motor
+      no_load_rpm_left: !!float 40.0  # No-load RPM for the left motor
+      no_load_rpm_right: !!float 40.0  # No-load RPM for the right motor
       
       # RDrive odometry configuration
-      odom_frequency: 30.0 # Wheel encoder odometry frequency (Hz)
+      odom_frequency: 20.0 # Wheel encoder odometry frequency (Hz)
       odom_topic: 'odom_wheel' # Topic for wheel encoder odometry
       publish_tf: true # Whether RDrive publishes TF transforms
       invert_odom_tf: true # Whether to invert the odometry transform 
@@ -111,12 +111,12 @@
       visualize: false # Enable visualization in RViz
       
       # Online Node Parameters
-      tf_timeout: 0.1 # TF lookup timeout (0.1 for sim, 0.0 for real)
+      tf_timeout: 0.1 # TF lookup timeout
       use_sim_time: false # Use simulation time
       
       # Preprocessing
-      max_range: 3.5 # Maximum range for lidar data
-      min_range: 0.2 # Minimum range for lidar data
+      max_range: 3.0 # Maximum range for lidar data
+      min_range: 0.0 # Minimum range for lidar data
       
       # Mapping parameters
       voxel_size: 0.1 # Size of voxels for mapping
@@ -127,9 +127,9 @@
       fixed_threshold: 1.0  # Fixed threshold (ignored if adaptive=true)
       
       # Registration Parameters
-      max_num_iterations: 10 # Maximum ICP iterations
+      max_num_iterations: 20 # Maximum ICP iterations
       convergence_criterion: 0.001 # Convergence threshold
-      max_num_threads: 4 # Number of threads
+      max_num_threads: 1 # Number of threads
       use_adaptive_odometry_regularization: true # Adaptive odometry regularization
       fixed_regularization: 0.0 # Fixed regularization (ignored if adaptive=true)
       
