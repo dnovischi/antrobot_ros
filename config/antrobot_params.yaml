@@ -11,8 +11,8 @@
       wheel_separation: 0.219  # Distance between the wheels in meters
       encoder_cpr_left: 2940  # Encoder counts per revolution for the left motor
       encoder_cpr_right: 2940  # Encoder counts per revolution for the right motor
-      no_load_rpm_left: !!float 45.0  # No-load RPM for the left motor
-      no_load_rpm_right: !!float 45.0  # No-load RPM for the right motor
+      no_load_rpm_left: !!float 60.0  # No-load RPM for the left motor
+      no_load_rpm_right: !!float 60.0  # No-load RPM for the right motor
       
       # RDrive odometry configuration
       odom_frequency: 20.0 # Wheel encoder odometry frequency (Hz)
@@ -21,6 +21,12 @@
       invert_odom_tf: true # Whether to invert the odometry transform 
       odom_frame_id: 'odom_wheel' # Frame ID for the odometry data
       base_frame_id: 'base_link' # Frame ID for the base link
+      
+      # Pose jump detection and correction parameters
+      enable_jump_correction: true  # Enable pose jump detection and correction
+      max_linear_jump: 0.5  # Maximum allowable linear position jump (meters)
+      max_angular_jump: 0.785  # Maximum allowable angular jump (radians) ~45 degrees
+      max_velocity_jump: 2.0  # Maximum allowable velocity change (m/s)
 
     # RPLidar is the lidar used for Antrobot, which currently integrates A1 and A2
     rplidar:

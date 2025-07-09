@@ -16,6 +16,192 @@ from tf2_ros import TransformBroadcaster
 from builtin_interfaces.msg import Time
 from nav2_msgs.srv import SetInitialPose
 import math  # Replace tf_transformations with math
+import time
+
+
+class PoseCorrector:
+    """
+    Detects and corrects pose jumps in odometry data based on command velocities and timestamps.
+    """
+    
+    def __init__(self, max_linear_jump=0.5, max_angular_jump=0.785, max_velocity_jump=2.0, max_dt=0.5):
+        """
+        Initialize the pose corrector.
+        
+        Args:
+            max_linear_jump: Maximum allowable linear position jump (meters)
+            max_angular_jump: Maximum allowable angular jump (radians)  
+            max_velocity_jump: Maximum allowable velocity change (m/s)
+            max_dt: Maximum time difference for correction (seconds)
+        """
+        self.max_linear_jump = max_linear_jump
+        self.max_angular_jump = max_angular_jump
+        self.max_velocity_jump = max_velocity_jump
+        self.max_dt = max_dt
+        
+        # Previous state
+        self.prev_pose = {'x': 0.0, 'y': 0.0, 'theta': 0.0}
+        self.prev_velocity = {'linear': 0.0, 'angular': 0.0}
+        self.prev_timestamp = None
+        self.prev_commands = {'linear': 0.0, 'angular': 0.0}
+        
+        # Correction statistics
+        self.correction_count = 0
+        self.total_measurements = 0
+        
+    def update_commands(self, linear_cmd, angular_cmd):
+        """Update the current command velocities."""
+        self.prev_commands['linear'] = linear_cmd
+        self.prev_commands['angular'] = angular_cmd
+    
+    def predict_pose(self, dt):
+        """
+        Predict the expected pose based on previous pose and command velocities.
+        
+        Args:
+            dt: Time difference (seconds)
+            
+        Returns:
+            dict: Predicted pose {'x', 'y', 'theta'}
+        """
+        if dt <= 0 or dt > self.max_dt:
+            return self.prev_pose.copy()
+            
+        # Use command velocities for prediction (more reliable than reported velocities during jumps)
+        v = self.prev_commands['linear']
+        omega = self.prev_commands['angular']
+        
+        # Predict new pose using differential drive kinematics
+        if abs(omega) < 1e-6:  # Straight line motion
+            dx = v * dt * math.cos(self.prev_pose['theta'])
+            dy = v * dt * math.sin(self.prev_pose['theta'])
+            dtheta = 0.0
+        else:  # Curved motion
+            # Radius of curvature
+            R = v / omega
+            
+            # Change in orientation
+            dtheta = omega * dt
+            
+            # Position change in robot frame
+            dx_robot = R * math.sin(dtheta)
+            dy_robot = R * (1 - math.cos(dtheta))
+            
+            # Transform to global frame
+            cos_theta = math.cos(self.prev_pose['theta'])
+            sin_theta = math.sin(self.prev_pose['theta'])
+            
+            dx = dx_robot * cos_theta - dy_robot * sin_theta
+            dy = dx_robot * sin_theta + dy_robot * cos_theta
+        
+        predicted_pose = {
+            'x': self.prev_pose['x'] + dx,
+            'y': self.prev_pose['y'] + dy,
+            'theta': self.prev_pose['theta'] + dtheta
+        }
+        
+        # Normalize theta to [-pi, pi]
+        predicted_pose['theta'] = math.atan2(math.sin(predicted_pose['theta']), 
+                                           math.cos(predicted_pose['theta']))
+        
+        return predicted_pose
+    
+    def detect_jump(self, current_pose, current_velocity, current_timestamp):
+        """
+        Detect if there's a jump in pose or velocity data.
+        
+        Args:
+            current_pose: dict with 'x', 'y', 'theta'
+            current_velocity: dict with 'linear', 'angular'
+            current_timestamp: timestamp in seconds
+            
+        Returns:
+            tuple: (has_jump, jump_info, corrected_pose)
+        """
+        self.total_measurements += 1
+        
+        if self.prev_timestamp is None:
+            # First measurement, no correction needed
+            self.prev_pose = current_pose.copy()
+            self.prev_velocity = current_velocity.copy()
+            self.prev_timestamp = current_timestamp
+            return False, {}, current_pose
+        
+        # Calculate time difference
+        dt = current_timestamp - self.prev_timestamp
+        
+        if dt <= 0 or dt > self.max_dt:
+            # Invalid time difference, skip correction
+            self.prev_pose = current_pose.copy()
+            self.prev_velocity = current_velocity.copy()
+            self.prev_timestamp = current_timestamp
+            return False, {"reason": f"Invalid dt: {dt}"}, current_pose
+        
+        # Calculate position and angle differences
+        dx = current_pose['x'] - self.prev_pose['x']
+        dy = current_pose['y'] - self.prev_pose['y']
+        position_jump = math.sqrt(dx*dx + dy*dy)
+        
+        angle_diff = current_pose['theta'] - self.prev_pose['theta']
+        # Normalize angle difference to [-pi, pi]
+        angle_jump = abs(math.atan2(math.sin(angle_diff), math.cos(angle_diff)))
+        
+        # Calculate velocity jumps
+        velocity_jump = abs(current_velocity['linear'] - self.prev_velocity['linear'])
+        angular_velocity_jump = abs(current_velocity['angular'] - self.prev_velocity['angular'])
+        
+        # Check for jumps
+        has_position_jump = position_jump > self.max_linear_jump
+        has_angle_jump = angle_jump > self.max_angular_jump
+        has_velocity_jump = velocity_jump > self.max_velocity_jump
+        
+        jump_detected = has_position_jump or has_angle_jump or has_velocity_jump
+        
+        jump_info = {
+            'position_jump': position_jump,
+            'angle_jump': angle_jump,
+            'velocity_jump': velocity_jump,
+            'angular_velocity_jump': angular_velocity_jump,
+            'dt': dt,
+            'has_position_jump': has_position_jump,
+            'has_angle_jump': has_angle_jump,
+            'has_velocity_jump': has_velocity_jump
+        }
+        
+        corrected_pose = current_pose.copy()
+        
+        if jump_detected:
+            self.correction_count += 1
+            
+            # Predict expected pose based on previous state and commands
+            predicted_pose = self.predict_pose(dt)
+            
+            # Use predicted pose instead of jumped pose
+            corrected_pose = predicted_pose.copy()
+            
+            jump_info.update({
+                'predicted_pose': predicted_pose,
+                'original_pose': current_pose.copy(),
+                'corrected': True
+            })
+        else:
+            jump_info['corrected'] = False  # No correction applied
+        
+        # Update previous state with corrected values
+        self.prev_pose = corrected_pose.copy()
+        self.prev_velocity = current_velocity.copy()
+        self.prev_timestamp = current_timestamp
+        
+        return jump_detected, jump_info, corrected_pose
+    
+    def get_correction_stats(self):
+        """Get correction statistics."""
+        correction_rate = (self.correction_count / self.total_measurements * 100) if self.total_measurements > 0 else 0
+        return {
+            'total_corrections': self.correction_count,
+            'total_measurements': self.total_measurements,
+            'correction_rate_percent': correction_rate
+        }
 
 
 class RDriveNode(Node):
@@ -169,6 +355,33 @@ class RDriveNode(Node):
             'angular_vel': 0.0
         }
         
+        # Initialize pose corrector
+        self.declare_parameter('max_linear_jump', 0.5, 
+                             ParameterDescriptor(description='Maximum allowable linear position jump (meters)'))
+        self.declare_parameter('max_angular_jump', 0.785, 
+                             ParameterDescriptor(description='Maximum allowable angular jump (radians)'))
+        self.declare_parameter('max_velocity_jump', 2.0,
+                             ParameterDescriptor(description='Maximum allowable velocity change (m/s)'))
+        self.declare_parameter('enable_jump_correction', True,
+                             ParameterDescriptor(description='Enable pose jump detection and correction'))
+        
+        max_linear_jump = self.get_parameter('max_linear_jump').value
+        max_angular_jump = self.get_parameter('max_angular_jump').value
+        max_velocity_jump = self.get_parameter('max_velocity_jump').value
+        self.enable_jump_correction = self.get_parameter('enable_jump_correction').value
+        
+        self.pose_corrector = PoseCorrector(
+            max_linear_jump=max_linear_jump,
+            max_angular_jump=max_angular_jump,
+            max_velocity_jump=max_velocity_jump
+        )
+        
+        # Track current command for correction
+        self.current_cmd_vel = {'linear': 0.0, 'angular': 0.0}
+        
+        # Statistics timer
+        self.stats_timer = self.create_timer(10.0, self.log_correction_stats)
+        
         # Set covariance matrices (tune these values based on your robot's accuracy)
         pose_covariance = [
             0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -222,6 +435,14 @@ class RDriveNode(Node):
     def __cmd_vel_callback(self, msg: Twist) -> None:
         v = msg.linear.x
         omega = msg.angular.z
+        
+        # Store current command for pose correction
+        self.current_cmd_vel['linear'] = v
+        self.current_cmd_vel['angular'] = omega
+        
+        # Update pose corrector with current commands
+        if self.enable_jump_correction:
+            self.pose_corrector.update_commands(v, omega)
         
         # Compute feasible command respecting robot constraints
         v_feasible, omega_feasible = self._compute_feasible_command(v, omega)
@@ -305,6 +526,17 @@ class RDriveNode(Node):
         
         return v_feasible, omega_feasible
     
+    def log_correction_stats(self):
+        """Log pose correction statistics periodically."""
+        if self.enable_jump_correction:
+            stats = self.pose_corrector.get_correction_stats()
+            if stats['total_measurements'] > 0:
+                self.get_logger().info(
+                    f"Pose correction stats: {stats['total_corrections']} corrections "
+                    f"out of {stats['total_measurements']} measurements "
+                    f"({stats['correction_rate_percent']:.1f}% correction rate)"
+                )
+
     def set_pose_callback(self, request, response):
         """Service callback to set the robot's pose."""
         try:
@@ -343,14 +575,14 @@ class RDriveNode(Node):
             return
             
         # Parse odometry data: [timestamp_counts, x, y, theta, linear_velocity, angular_velocity]
-        _, x, y, theta, linear_vel, angular_vel = odom_data
+        timestamp_counts, x_raw, y_raw, theta_raw, linear_vel_raw, angular_vel_raw = odom_data
         
         # Check for NaN values and use previous valid data if found
-        if (math.isnan(x) or math.isnan(y) or math.isnan(theta) or 
-            math.isnan(linear_vel) or math.isnan(angular_vel)):
+        if (math.isnan(x_raw) or math.isnan(y_raw) or math.isnan(theta_raw) or 
+            math.isnan(linear_vel_raw) or math.isnan(angular_vel_raw)):
             
-            self.get_logger().warn(f'NaN detected in odometry data: x={x}, y={y}, theta={theta}, '
-                                 f'linear_vel={linear_vel}, angular_vel={angular_vel}. '
+            self.get_logger().warn(f'NaN detected in odometry data: x={x_raw}, y={y_raw}, theta={theta_raw}, '
+                                 f'linear_vel={linear_vel_raw}, angular_vel={angular_vel_raw}. '
                                  f'Using previous valid values.')
             
             # Use previous valid values
@@ -360,12 +592,50 @@ class RDriveNode(Node):
             linear_vel = self.prev_valid_odom['linear_vel']
             angular_vel = self.prev_valid_odom['angular_vel']
         else:
-            # Update previous valid values with current valid data
-            self.prev_valid_odom['x'] = x
-            self.prev_valid_odom['y'] = y
-            self.prev_valid_odom['theta'] = theta
-            self.prev_valid_odom['linear_vel'] = linear_vel
-            self.prev_valid_odom['angular_vel'] = angular_vel
+            x, y, theta = x_raw, y_raw, theta_raw
+            linear_vel, angular_vel = linear_vel_raw, angular_vel_raw
+        
+        # Apply jump detection and correction
+        current_pose = {'x': x, 'y': y, 'theta': theta}
+        current_velocity = {'linear': linear_vel, 'angular': angular_vel}
+        current_timestamp = time.time()  # Use wall time for consistency
+        
+        if self.enable_jump_correction:
+            has_jump, jump_info, corrected_pose = self.pose_corrector.detect_jump(
+                current_pose, current_velocity, current_timestamp
+            )
+            
+            if has_jump:
+                # Log jump detection
+                self.get_logger().warn(
+                    f"POSE JUMP DETECTED AND CORRECTED:\n"
+                    f"  Position jump: {jump_info['position_jump']:.3f}m\n"
+                    f"  Angular jump: {jump_info['angle_jump']:.3f}rad ({math.degrees(jump_info['angle_jump']):.1f}°)\n"
+                    f"  Velocity jump: {jump_info['velocity_jump']:.3f}m/s\n"
+                    f"  Time difference: {jump_info['dt']:.3f}s\n"
+                    f"  Original pose: x={current_pose['x']:.3f}, y={current_pose['y']:.3f}, θ={current_pose['theta']:.3f}\n"
+                    f"  Corrected pose: x={corrected_pose['x']:.3f}, y={corrected_pose['y']:.3f}, θ={corrected_pose['theta']:.3f}\n"
+                    f"  Command: v={self.current_cmd_vel['linear']:.3f}, ω={self.current_cmd_vel['angular']:.3f}"
+                )
+                
+                # Update the hardware with corrected pose
+                try:
+                    self.drive.set_pose(corrected_pose['x'], corrected_pose['y'], corrected_pose['theta'])
+                    self.get_logger().info(f"Hardware pose updated to corrected values")
+                except Exception as e:
+                    self.get_logger().error(f"Failed to update hardware pose: {e}")
+                
+            # Use corrected pose
+            x = corrected_pose['x']
+            y = corrected_pose['y'] 
+            theta = corrected_pose['theta']
+        
+        # Update previous valid values with final corrected data
+        self.prev_valid_odom['x'] = x
+        self.prev_valid_odom['y'] = y
+        self.prev_valid_odom['theta'] = theta
+        self.prev_valid_odom['linear_vel'] = linear_vel
+        self.prev_valid_odom['angular_vel'] = angular_vel
         
         # Use current ROS time for odometry timestamp
         # Since RDrive computation is very fast (<1ms), this provides better
@@ -409,7 +679,7 @@ class RDriveNode(Node):
         
         if self.invert_odom_tf:
             # When inverted: base_link → odom_frame (odom_frame is child of base_link)
-            # This means we need to compute the inverse transform
+            # This creates an inverted TF tree structure
             transform.header.frame_id = self.base_frame_id
             transform.child_frame_id = self.odom_frame_id
             
