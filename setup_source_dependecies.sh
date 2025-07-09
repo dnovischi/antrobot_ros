@@ -12,6 +12,7 @@ SRC_DIR=$WS_DIR/src
 # List of dependencies (repository URL + optional branch)
 DEPENDENCIES=(
     "https://github.com/PRBonn/kiss-icp.git main"
+    "https://github.com/PRBonn/kinematic-icp.git main"
     "https://github.com/aimas-upb/antrobot_description.git master"
     # Add other dependencies here
 )
@@ -42,7 +43,7 @@ install_dependencies() {
 build_workspace_deps() {
     cd $WS_DIR
     echo "Building workspace with colcon..."
-    colcon build --symlink-install --packages-skip antrobot_ros
+    colcon build --symlink-install --packages-skip antrobot_ros --executor sequential
 }
 
 
