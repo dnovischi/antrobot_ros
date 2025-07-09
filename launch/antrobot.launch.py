@@ -1,0 +1,138 @@
+# Copyright (C) 2025 Dan Novischi. All rights reserved.
+# This software may be modified and distributed under the terms of the
+# GNU Lesser General Public License v3 or any later version.
+import os
+import re
+import platform
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
+from launch_ros.substitutions import FindPackageShare
+
+def generate_launch_description():
+    # TODO: this requires tf automatic nameing to be developed
+    # hostname = platform.node()
+    # match = re.search(r'-(antrobot\d+)', hostname)
+    # namespace = match.group(1) if match else ''
+    namespace=''
+    
+    namespace_launch_arg = DeclareLaunchArgument('namespace', default_value=namespace, description='Namespace for the robot')
+    rdrive_launch_arg = DeclareLaunchArgument('launch_rdrive', default_value='true', description='Launch rdrive')
+    rplidar_launch_arg = DeclareLaunchArgument('launch_rplidar', default_value='true', description='Launch rplidar')
+    joint_state_estimator_launch_arg = DeclareLaunchArgument('launch_joint_state_estimator', default_value='true', description='Launch joint_state_estimator')
+    robot_state_launch_arg = DeclareLaunchArgument('launch_robot_state', default_value='true', description='Launch robot_state')
+    tf_static_link_launch_arg = DeclareLaunchArgument('launch_tf_static_link', default_value='false', description='Launch tf_static_link') # TODO: this is only used for debug, set accordingly
+    laserscan_to_pointcloud_launch_arg = DeclareLaunchArgument('launch_laserscan_to_pointcloud', default_value='false', description='Launch laserscan_to_pointcloud')
+    kiss_icp_launch_arg = DeclareLaunchArgument('launch_kiss_icp', default_value='false', description='Launch kiss_icp')
+    kinematic_icp_launch_arg = DeclareLaunchArgument('launch_kinematic_icp', default_value='true', description='Launch kinematic_icp')
+    cartographer_launch_arg = DeclareLaunchArgument('launch_cartographer', default_value='true', description='Launch cartographer')
+    nav2_launch_arg = DeclareLaunchArgument('launch_nav2', default_value='true', description='Launch nav2')
+    
+    rdrive_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'rdrive.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_rdrive')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    rplidar_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'rplidar.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_rplidar')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+    
+    joint_state_estimator_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'joint_state_estimator.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_joint_state_estimator')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+    
+    robot_state_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'robot_state.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_robot_state')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    
+    tf_static_link_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'tf_static_link.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_tf_static_link')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    laserscan_to_pointcloud_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'laserscan_to_pointcloud.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_laserscan_to_pointcloud')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    kiss_icp_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'kiss_icp.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_kiss_icp')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    kinematic_icp_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'kinematic_icp.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_kinematic_icp')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+    
+    cartographer_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'cartographer.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_cartographer')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+    nav2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(FindPackageShare('antrobot_ros').find('antrobot_ros'), 'launch', 'nav2.launch.py')
+        ),
+        condition=IfCondition(LaunchConfiguration('launch_nav2')),
+        launch_arguments={'namespace': LaunchConfiguration('namespace')}.items()
+    )
+
+
+    return LaunchDescription([
+        namespace_launch_arg,
+        rdrive_launch_arg,
+        rplidar_launch_arg,
+        tf_static_link_launch_arg,
+        laserscan_to_pointcloud_launch_arg,
+        kiss_icp_launch_arg,
+        kinematic_icp_launch_arg, 
+        cartographer_launch_arg,
+        joint_state_estimator_launch_arg,
+        robot_state_launch_arg,
+        nav2_launch_arg,
+        rdrive_launch,
+        rplidar_launch,
+        tf_static_link_launch,
+        laserscan_to_pointcloud_launch,
+        kiss_icp_launch,
+        kinematic_icp_launch, 
+        cartographer_launch,
+        joint_state_estimator_launch,
+        robot_state_launch,
+        nav2_launch,
+    ])

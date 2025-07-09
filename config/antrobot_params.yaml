@@ -1,0 +1,152 @@
+# Copyright (C) 2025 Dan Novischi. All rights reserved.
+# This software may be modified and distributed under the terms of the
+# GNU Lesser General Public License v3 or any later version.
+
+/**:
+  ros__parameters:
+    # RDrive is the Antrobot navigation module. The moudle implements the control system 
+    # for the differential drive in a closed loop fashion
+    rdrive: # TODO: uddate this to antrobot and include options for urdf or all structural param and frames, this should be done only once
+      wheel_radius: 0.03  # Radius of the wheels in meters
+      wheel_separation: 0.219  # Distance between the wheels in meters
+      encoder_cpr_left: 2940  # Encoder counts per revolution for the left motor
+      encoder_cpr_right: 2940  # Encoder counts per revolution for the right motor
+      no_load_rpm_left: !!float 45.0  # No-load RPM for the left motor
+      no_load_rpm_right: !!float 45.0  # No-load RPM for the right motor
+      
+      # RDrive odometry configuration
+      odom_frequency: 20.0 # Wheel encoder odometry frequency (Hz)
+      odom_topic: 'odom_wheel' # Topic for wheel encoder odometry
+      publish_tf: true # Whether RDrive publishes TF transforms
+      invert_odom_tf: true # Whether to invert the odometry transform 
+      odom_frame_id: 'odom_wheel' # Frame ID for the odometry data
+      base_frame_id: 'base_link' # Frame ID for the base link
+
+    # RPLidar is the lidar used for Antrobot, which currently integrates A1 and A2
+    rplidar:
+      serial_port: "/dev/ttyUSB0"  # Serial port for the RPLIDAR device
+      serial_baudrate: 115200  # Baud rate for the RPLIDAR serial communication
+      frame_id: "rplidar_link"  # Frame ID for the laser scan data
+      inverted: false  # Whether the laser scan data is inverted
+      angle_compensate: true  # Whether to use angle compensation for the laser scan
+      scan_mode: "Sensitivity"  # Scan mode for the RPLIDAR (Options: "Standard", "Express", "Boost", "Sensitivity")
+
+    # The joint state estimator node is used to estimate the wheel joint states for the antrobot
+    joint_state_estimator:
+      odom: 'odom_wheel'  # Topic name for the odometry data to which the node subscribes (use 'wheel_odom' for RDrive, 'odom' for ICP)
+      joint_states_topic: 'joint_states'  # Topic name for the joint states to which the node publishes
+      use_icp_estimation: false  # Use ICP-based estimation (true) or Drive odometry (false, default)
+      wheel_velocity_correction_factor: 0.1  # Velocity correction factor for hybrid estimation
+      wheel_radius: 0.03  # Radius of the wheels in meters # TODO: This should be done only once
+      wheel_separation: 0.219  # Distance between the wheels in meters # TODO: This should be done only once
+      publish_frequency: 20.0  # The maximum frequency at which the joint states will be published
+
+    # The robot state node is used to publish the robot state information
+    robot_state:
+      description_package: antrobot_description # Package name for the robot description # TODO: This should be part of the antrobot confi
+      description_file: antrobot.xacro  # URDF file for the robot model # TODO: This should be done only once
+      joint_states_topic: 'joint_states'  # Topic name for the joint states # TODO: This should be done only once
+      publish_frequency: 20.0  # The maximum frequency at which non-static transforms will be published to /tf
+      ignore_timestamp: false  # Whether to accept all joint states no matter what the timestamp
+      frame_prefix: ""  # An arbitrary prefix to add to the published tf2 frames (this is set based on the robot namespace dynamically)
+
+    # The static tf defines the structural frames for the components of the Antrobot as extracted from the mechanical design
+    # This node is used only for debuging purposes, the robot_state_publisher is used to publish the the tf tree
+    tf_static:
+      transforms:
+        - parent_frame: "base_link" # base_link is the frame at the wheel base  
+          child_frame: "base_footprint" # base_footprint is the frame at ground level, at robot center
+          translation: [0.0, 0.0, -0.035]  # base_link (wheel_base) is 0.035m above base_footprint (at ground level)
+          rotation: [0.0, 0.0, 0.0] # no rotation
+        - parent_frame: "base_link" # base_link is the frame at the wheel base
+          child_frame: "laser_link" # laser_link is the frame at the lidar
+          translation: [0.0, 0.0, 0.155]  # laser (Lidar A2 link) is 0.155m above base_link (wheel_base), if using a aditional spacer adjust with its height
+          rotation: [0.0, 0.0, 0.0]
+      publish_transforms: false  # Debug: Enable static tf publishing
+
+    # Laserscan to point cloud converts laserscans to pointclouds required for ICPs
+    laserscan_to_pointcloud:
+      scan_topic: 'scan'  # Topic name for the laser scan data
+      pointcloud_topic: 'scan_pointcloud'  # Topic name for the point cloud data
+      include_point_timestamp: True  # Whether to include timestamps in the point cloud data
+
+    # For the SLAM front-end Antrobot currently integrates the KISS-ICP 
+    # (https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/vizzo2023ral.pdf)
+    # This publishes the robot odometry. Currently it only integrates lidar information. 
+    # Integration with wheel encoders and imu is pending.
+    kiss_icp:
+      odom_topic: 'odom'  # Topic name for the odometry data
+      base_frame: 'base_link'  # Base frame for the ICP algorithm
+      lidar_odom_frame: "odom"  # Frame ID for the lidar odometry 
+      publish_odom_tf: true  # Whether to publish the odometry transform
+      invert_odom_tf: false  # Whether to invert the odometry transform
+      max_range: 3.5  # Maximum range for the lidar data in meters 
+      min_range: 0.2  # Minimum range for the lidar data in meters
+      deskew: true  # Whether or not to deskew the lidar data (set to true for moving robots) - requires timestamps for each point
+      max_points_per_voxel: 100  # Maximum number of points per voxel for the mapping (increase for higher resolution)
+      voxel_size: 0.1  # Size of the voxels for the mapping (decrease for finer resolution)
+      initial_threshold: 1.5  # Initial threshold for the adaptive threshold algorithm (adjust based on environment)
+      min_motion_th: 0.15  # Minimum motion threshold for the adaptive threshold algorithm (adjust based on robot speed)
+      max_num_iterations: 5000  # Maximum number of iterations for the registration algorithm (increase for more accuracy)
+      convergence_criterion: 1e-8  # Convergence criterion for the registration algorithm (decrease for more precision)
+      max_num_threads: 0  # Maximum number of threads for the registration algorithm (set to 0 to use all available threads)
+      position_covariance: 0.2  # Fixed covariance for the position (adjust based on sensor accuracy)
+      orientation_covariance: 0.2  # Fixed covariance for the orientation (adjust based on sensor accuracy)
+      publish_debug_clouds: false  # Whether to publish debug point clouds (set to true for debugging)
+      use_sim_time: false  # Whether to use simulation time (set to true for simulations)
+
+    # Kinematic ICP - Advanced SLAM front-end that fuses wheel odometry with laser scan
+    # Replaces KISS-ICP with improved odometry using kinematic constraints
+    # Paper: https://arxiv.org/pdf/2410.10277 - 2025
+    kinematic_icp:
+      # Launch Arguments
+      lidar_topic: "scan" # Topic for laser scan input
+      use_2d_lidar: true # Use 2D lidar mode (true for RPLidar)
+      lidar_odometry_topic: "odom" # Output odometry topic
+      lidar_odom_frame: "odom" # Frame for lidar odometry
+      wheel_odom_frame: "odom_wheel" # Frame for wheel odometry (from RDrive)
+      base_frame: "base_link" # Robot base frame
+      publish_odom_tf: true # Whether to publish TF transforms
+      invert_odom_tf: false # Whether to invert TF transform
+      visualize: false # Enable visualization in RViz
+      
+      # Online Node Parameters
+      tf_timeout: 0.1 # TF lookup timeout
+      use_sim_time: false # Use simulation time
+      
+      # Preprocessing
+      max_range: 3.0 # Maximum range for lidar data
+      min_range: 0.0 # Minimum range for lidar data
+      
+      # Mapping parameters
+      voxel_size: 0.1 # Size of voxels for mapping
+      max_points_per_voxel: 20 # Maximum points per voxel
+      
+      # Correspondence threshold parameters
+      use_adaptive_threshold: true # Use adaptive threshold
+      fixed_threshold: 1.0  # Fixed threshold (ignored if adaptive=true)
+      
+      # Registration Parameters
+      max_num_iterations: 20 # Maximum ICP iterations
+      convergence_criterion: 0.001 # Convergence threshold
+      max_num_threads: 1 # Number of threads
+      use_adaptive_odometry_regularization: true # Adaptive odometry regularization
+      fixed_regularization: 0.0 # Fixed regularization (ignored if adaptive=true)
+      
+      # Motion Compensation
+      deskew: true # Motion compensation during scan
+      
+      # Covariance diagonal values
+      orientation_covariance: 0.1 # Orientation covariance
+      position_covariance: 0.1 # Position covariance
+
+    # Cartographer is another SLAM algorithm used for mapping and localization 
+    # (https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/45466.pdf)
+    cartographer:
+      config_file: 'antrobot_cartographer_2d.lua' # Name of the Cartographer configuration file
+      resolution: 0.05  # Resolution of the occupancy grid in meters
+      publish_period_sec: 1.0  # Publishing period for the occupancy grid node in seconds
+
+
+
+
