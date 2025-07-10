@@ -1,0 +1,61 @@
+# ========== PARAMETERS FOR ALL NODES ==========
+# Using /** pattern compatible with m-explore-ros2 parameter loading
+
+/**:
+  ros__parameters:
+    # ========== MAP CONVERTER PARAMETERS ==========
+    # Enable explore lite mode - set to true to convert and publish maps for explore_lite
+    enable_explore_lite: false
+    
+    # Two-stage conversion like Cartographer's pbstream→PGM approach
+    # Stage 1: Threshold-based conversion
+    free_threshold: 10        # Below this (prob <= 0.1): FREE space
+    occupied_threshold: 90    # Above this (prob >= 0.8): OCCUPIED space
+
+    # Stage 2: KNN for intermediate values (between thresholds)
+    use_knn: true            # Enable KNN processing for intermediate probability values
+    
+    # Topic configuration
+    input_map_topic: 'map' # Input map from SLAM
+    input_map_updates_topic: 'map_updates' # Input map updates from SLAM
+    output_map_topic: 'map_explore' # Output converted map for explore_lite
+    output_map_updates_topic: 'map_updates_explore' # Output converted updates
+    
+    # Rate to republish the map (Hz) - helps with latching behavior
+    publish_rate: 1.0
+    
+    # ========== EXPLORE_LITE PARAMETERS ==========
+    # Configure these when using explore_lite with the converted maps
+    # Set costmap_topic and costmap_updates_topic to match output topics above
+    
+    # Robot configuration
+    robot_base_frame: 'base_link' # Frame ID of robot base
+    
+    # Behavior settings
+    return_to_init: true # Return to starting position when done
+    
+    # Map topics - IMPORTANT: Set these to use converted maps when enable_explore_lite=true
+    # When using map converter: set to map_explore and map_updates_explore
+    # When using original maps: set to map and map_updates
+    costmap_topic: 'map_explore' # Topic for occupancy grid map
+    costmap_updates_topic: 'map_updates_explore' # Topic for map updates
+    
+    # Visualization
+    visualize: true # Publish visualization markers
+    
+    # Planning parameters
+    planner_frequency: 0.5 # How often to plan new goals (Hz)
+    progress_timeout: 60.0 # Timeout if no progress made (seconds)
+    
+    # Frontier detection parameters
+    potential_scale: 3.0 # Weight for frontier potential
+    orientation_scale: 0.5 # Weight for robot orientation
+    gain_scale: 1.0 # Weight for information gain
+    
+    # Transform parameters
+    transform_tolerance: 0.3 # Transform timeout (seconds)
+    
+    # Frontier size filtering
+    # CRITICAL: This determines minimum frontier size to consider
+    # If no frontiers found, try reducing this value
+    min_frontier_size: 0.8 # Minimum frontier size (meters)

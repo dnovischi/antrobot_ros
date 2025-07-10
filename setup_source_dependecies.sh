@@ -13,6 +13,7 @@ SRC_DIR=$WS_DIR/src
 DEPENDENCIES=(
     "https://github.com/PRBonn/kiss-icp.git main"
     "https://github.com/PRBonn/kinematic-icp.git main"
+    "https://github.com/robo-friends/m-explore-ros2.git main"
     "https://github.com/aimas-upb/antrobot_description.git master"
     # Add other dependencies here
 )
