@@ -18,7 +18,6 @@ setup(
         (os.path.join('share', package_name, 'config'), glob(os.path.join('config', '*.lua'))),
         # Include all launch files.
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
-        (os.path.join('share', package_name, 'config'), glob(os.path.join('config', '*.yaml'))),
         (os.path.join('share', package_name, 'docs'), glob(os.path.join('docs', '*.md'))),
         # Include evaluation scripts
         (os.path.join('share', package_name, 'scripts', 'evaluation', 'odom'), glob(os.path.join('scripts', 'evaluation', 'odom', '*.sh'))),
@@ -41,6 +40,7 @@ setup(
             'joint_state_estimator_node = antrobot_ros.joint_state_estimator_node:main',
             'odom_eval_node = antrobot_ros.odom_eval_node:main',
             'odom_monitor = antrobot_ros.odom_monitor:main',
+            'explore_lite_map_converter = antrobot_ros.explore_lite_map_converter:main',
             'quick_odom_monitor = scripts.diagnostic.quick_odom_monitor:main',
             'tf_timing_capture = scripts.diagnostic.tf_timing_capture:main',
             'tf_timing_diagnostic = scripts.diagnostic.tf_timing_diagnostic:main'
