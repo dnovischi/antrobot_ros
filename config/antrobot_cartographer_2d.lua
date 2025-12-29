@@ -44,7 +44,7 @@ options = {
 MAP_BUILDER.use_trajectory_builder_2d = true  -- Use the 2D trajectory builder
 
 TRAJECTORY_BUILDER_2D.min_range = 0.2  -- Minimum range of the laser scanner
-TRAJECTORY_BUILDER_2D.max_range = 4.0  -- Maximum range of the laser scanner
+TRAJECTORY_BUILDER_2D.max_range = 5.0  -- Maximum range of the laser scanner
 TRAJECTORY_BUILDER_2D.missing_data_ray_length = 3.0  -- Length of rays for missing data (for missing rays assume they're at a 3m distance)
 TRAJECTORY_BUILDER_2D.use_imu_data = false  -- Whether or not to use IMU data
 TRAJECTORY_BUILDER_2D.use_online_correlative_scan_matching = true  -- Whether or not to use online correlative scan matching (yes aling the incomming lidar scans with the map)
@@ -52,6 +52,6 @@ TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians = math.rad(0.1)  -- Maximu
 
 POSE_GRAPH.constraint_builder.min_score = 0.8  -- Minimum scan matching score for constraints (bellow constriants are ignored)  
 POSE_GRAPH.constraint_builder.global_localization_min_score = 0.85  -- Minimum score for global localization (bellow scores ignore scan matching for localization)
-POSE_GRAPH.optimize_every_n_nodes = 10  -- Number of nodes after which to optimize the pose graph
+POSE_GRAPH.optimize_every_n_nodes = 20  -- Number of nodes after which to optimize the pose graph
 
 return options

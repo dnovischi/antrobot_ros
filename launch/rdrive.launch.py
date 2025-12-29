@@ -38,7 +38,12 @@ def generate_launch_description():
         'publish_tf': bool(launch_params['publish_tf']),
         'odom_frame_id': launch_params['odom_frame_id'],
         'base_frame_id': launch_params['base_frame_id'],
-        'invert_odom_tf': bool(launch_params['invert_odom_tf'])
+        'invert_odom_tf': bool(launch_params['invert_odom_tf']),
+        # Jump correction parameters
+        'enable_jump_correction': bool(launch_params.get('enable_jump_correction', True)),
+        'max_linear_jump': float(launch_params.get('max_linear_jump', 0.5)),
+        'max_angular_jump': float(launch_params.get('max_angular_jump', 0.785)),
+        'max_velocity_jump': float(launch_params.get('max_velocity_jump', 2.0))
     }
     
     # Create the rdrive node
