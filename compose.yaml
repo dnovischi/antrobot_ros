@@ -1,0 +1,17 @@
+name: antrobot
+services:
+  rpi:
+    image: dnovischi/antrobot-ros-humble:latest
+    ipc: host
+    network_mode: host
+    tty: true
+    stdin_open: true
+    # volumes:
+    #   - target: /ros2_ws
+    #     source: ../../
+    #     type: bind
+    group_add:
+      - dialout
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/i2c-1:/dev/i2c-1
