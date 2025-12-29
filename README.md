@@ -6,13 +6,20 @@ This package is intentionally structured as the “glue” layer that connects t
 
 ## Showcase
 
-<img src="assets/antrobot-assembly.png" alt="Assembly" width="200" style="max-width: 100%; height: auto;" />
-
-*Assembly rendering (CAD) of the robot.*
-
-<img src="assets/physical-antrobots-v4-first-builds.jpg" alt="Physical" width="200" style="max-width: 100%; height: auto;" />
-
-*Physical robots (real builds).* 
+<table>
+	<tr>
+		<td align="center">
+			<img src="assets/antrobot-assembly.png" alt="Assembly" width="200" style="max-width: 100%; height: auto;" />
+			<br />
+			<em>Assembly rendering (CAD) of the robot.</em>
+		</td>
+		<td align="center">
+			<img src="assets/physical-antrobots-v4-first-builds.jpg" alt="Physical" width="500" style="max-width: 100%; height: auto;" />
+			<br />
+			<em>Physical robots (real builds).</em>
+		</td>
+	</tr>
+</table>
 
 ## What this package contains
 
